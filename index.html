@@ -633,7 +633,7 @@ input[type=number]{-moz-appearance:textfield;}
           <div class="edit-panel-title">Edit task</div>
           <div class="edit-row"><input type="text" id="edit-name-input" placeholder="Task name"/></div>
           <div class="edit-time-row"><label>Time</label><input type="time" id="edit-time-input"/></div>
-          <div id="edit-reminder-row" style="display:none;"><div class="reminder-row"><label>Reminder</label><select id="edit-reminder" class="reminder-select"><option value="">No reminder</option><option value="0">At time</option><option value="15">15 min before</option><option value="30">30 min before</option><option value="60">1 hour before</option></select></div></div>
+          <div id="edit-reminder-row" style="display:none;"><div class="reminder-row"><label>Reminder</label><select id="edit-reminder" class="reminder-select"><option value="">No reminder</option><option value="0">At time</option><option value="15">15 min before</option><option value="30">30 min before</option><option value="60">1 hour before</option><option value="1440">1 day before</option></select></div></div>
           <div class="edit-btns">
             <button class="edit-cancel" onclick="cancelEdit()">Cancel</button>
             <button class="edit-save" onclick="saveEdit()">Save</button>
@@ -660,7 +660,7 @@ input[type=number]{-moz-appearance:textfield;}
           </div>
           <div class="drum-highlight"></div>
         </div>
-        <div id="modal-reminder-row" style="display:none;"><div class="reminder-row"><label>Reminder</label><select id="modal-reminder" class="reminder-select"><option value="">No reminder</option><option value="0">At time</option><option value="15" selected>15 min before</option><option value="30">30 min before</option><option value="60">1 hour before</option></select></div></div>
+        <div id="modal-reminder-row" style="display:none;"><div class="reminder-row"><label>Reminder</label><select id="modal-reminder" class="reminder-select"><option value="" selected>No reminder</option><option value="0">At time</option><option value="15">15 min before</option><option value="30">30 min before</option><option value="60">1 hour before</option><option value="1440">1 day before</option></select></div></div>
         <button class="primary-btn" onclick="addDayTask()">Add task ＋</button>
       </div>
     </div>
@@ -758,6 +758,15 @@ function goHome(){
   document.getElementById('screen-home').classList.add('active');
   updateHomeFeatCards();
 }
+
+// SWIPE BACK (edge swipe from left → go home)
+let _swX=0,_swY=0;
+document.addEventListener('touchstart',e=>{_swX=e.touches[0].clientX;_swY=e.touches[0].clientY;},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(_swX>40)return;
+  const dx=e.changedTouches[0].clientX-_swX,dy=Math.abs(e.changedTouches[0].clientY-_swY);
+  if(dx>70&&dx>dy*1.5){const active=document.querySelector('.screen.active');if(active&&active.id!=='screen-home')goHome();}
+},{passive:true});
 
 function updateHomeFeatCards(){
   const items=data.items||[];
@@ -923,7 +932,7 @@ function renderModalTasks(){
         <div class="m-task-name">${esc(t.name)}</div>
         <div class="si-meta" style="margin-top:3px;">
           ${t.time?`<span class="m-task-time">⏰ ${fmt12(t.time)}</span>`:''}
-          ${t.time&&t.reminder!=null?`<span style="font-size:10px;font-weight:700;background:var(--amber-bg);color:var(--amber);padding:2px 7px;border-radius:6px;white-space:nowrap;">🔔 ${t.reminder===0?'at time':t.reminder+'min before'}</span>`:''}
+          ${t.time&&t.reminder!=null?`<span style="font-size:10px;font-weight:700;background:var(--amber-bg);color:var(--amber);padding:2px 7px;border-radius:6px;white-space:nowrap;">🔔 ${t.reminder===0?'at time':t.reminder===1440?'1 day before':t.reminder+'min before'}</span>`:''}
         </div>
       </div>
       <button class="t-edit" onclick="startEditTask(${idx})">✏️</button>
@@ -938,7 +947,7 @@ function startEditTask(i){
   document.getElementById('edit-name-input').value=t.name;
   document.getElementById('edit-time-input').value=t.time||'';
   const rr=document.getElementById('edit-reminder-row'),rs=document.getElementById('edit-reminder');
-  if(t.time){rr.style.display='block';rs.value=t.reminder!=null?String(t.reminder):'15';}else{rr.style.display='none';}
+  if(t.time){rr.style.display='block';rs.value=t.reminder!=null?String(t.reminder):'';}else{rr.style.display='none';}
   document.getElementById('edit-panel').style.display='block';document.getElementById('edit-name-input').focus();
 }
 function cancelEdit(){editingIdx=-1;document.getElementById('edit-panel').style.display='none';}
@@ -947,7 +956,7 @@ function saveEdit(){
   const t=data.tasks[editingIdx];
   cancelNotification(t.id);
   t.name=name;t.time=document.getElementById('edit-time-input').value||'';
-  if(t.time){const rv=document.getElementById('edit-reminder').value;t.reminder=rv!==''?parseInt(rv):15;}else{t.reminder=null;}
+  if(t.time){const rv=document.getElementById('edit-reminder').value;t.reminder=rv!==''?parseInt(rv):null;}else{t.reminder=null;}
   if(!t.id)t.id=genId();
   editingIdx=-1;document.getElementById('edit-panel').style.display='none';
   renderModalTasks();renderCal();push();
@@ -1095,7 +1104,17 @@ function delFixed(i){data.fixed.splice(i,1);renderFixed();renderBudget();push();
 function renderFixed(){
   const fixed=data.fixed||[];const el=document.getElementById('fixed-list');
   if(!fixed.length){el.innerHTML=`<div style="text-align:center;padding:.75rem;color:var(--text2);font-size:13px;">No fixed items yet</div>`;return;}
-  el.innerHTML=fixed.map((f,i)=>{
+  const totIn=fixed.filter(f=>f.type==='income').reduce((a,f)=>a+f.amount,0);
+  const totEx=fixed.filter(f=>f.type==='expense').reduce((a,f)=>a+f.amount,0);
+  const net=totIn-totEx;
+  const summaryBar=`<div style="display:flex;gap:8px;margin-bottom:.75rem;padding:10px 12px;background:var(--dark2);border-radius:12px;border:1px solid var(--border);">
+    <div style="flex:1;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Income</div><div style="font-size:15px;font-weight:800;color:var(--green);">+€${totIn.toFixed(2)}</div></div>
+    <div style="width:1px;background:var(--border);"></div>
+    <div style="flex:1;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Expenses</div><div style="font-size:15px;font-weight:800;color:var(--red);">-€${totEx.toFixed(2)}</div></div>
+    <div style="width:1px;background:var(--border);"></div>
+    <div style="flex:1;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Net</div><div style="font-size:15px;font-weight:800;color:${net>=0?'var(--green)':'var(--red)'};">${net>=0?'+':'-'}€${Math.abs(net).toFixed(2)}</div></div>
+  </div>`;
+  el.innerHTML=summaryBar+fixed.map((f,i)=>{
     const m=CAT_META[f.cat]||CAT_META.other;
     return`<div class="fixed-item">
       <div class="tx-icon" style="background:${m.bg};">${m.icon}</div>
@@ -1300,7 +1319,7 @@ function toggleTimePicker(){
   const isOn=wrap.style.display!=='none';
   wrap.style.display=isOn?'none':'block';
   track.classList.toggle('on',!isOn);
-  if(!isOn){initDrums();document.getElementById('modal-reminder-row').style.display='block';document.getElementById('modal-reminder').value='15';}
+  if(!isOn){initDrums();document.getElementById('modal-reminder-row').style.display='block';document.getElementById('modal-reminder').value='';}
   else{document.getElementById('modal-reminder-row').style.display='none';}
 }
 
