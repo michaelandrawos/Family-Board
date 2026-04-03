@@ -1,6 +1,6 @@
 <!-- Sync Impact Report
-  Version change: 1.0.0 → 1.0.1
-  Modified sections: Principle III — data shape updated to include `chores`; mutation rule explicitly scoped to all screens and features
+  Version change: 1.0.1 → 1.0.2
+  Modified sections: Principle III — `chores` removed from data shape; Chores screen removed from app
   Added sections: none
   Removed sections: none
   Templates requiring updates:
@@ -35,7 +35,7 @@ acceptable but must never degrade the mobile experience.
 ### III. Centralized Shared State via JSONBin
 
 All persistent data MUST live in a single `data` object with the shape:
-`{ items, tasks, todos, transactions, fixed, chores }`. This rule applies to **every screen
+`{ items, tasks, todos, transactions, fixed }`. This rule applies to **every screen
 and feature** in the app. Every mutation — regardless of which screen triggers it — MUST:
 1. Update `data` in memory
 2. Call `saveLocal()` to persist to `localStorage` (key: `fb_v4`)
@@ -103,4 +103,4 @@ path that reads and converts `fb_v4` data on first load.
 All pull requests and changes must be verified against the Constitution Check in plan.md
 before implementation.
 
-**Version**: 1.0.1 | **Ratified**: 2026-04-03 | **Last Amended**: 2026-04-03
+**Version**: 1.0.2 | **Ratified**: 2026-04-03 | **Last Amended**: 2026-04-03
