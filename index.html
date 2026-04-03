@@ -915,7 +915,10 @@ function renderModalTasks(){
       <div class="t-chk ${t.done?'chkd':''}" onclick="toggleTask(${idx})"></div>
       <div class="t-body">
         <div class="m-task-name">${esc(t.name)}</div>
-        ${t.time?`<div class="m-task-time">⏰ ${fmt12(t.time)}${t.reminder!=null?' 🔔':''}</div>`:''}
+        <div class="si-meta" style="margin-top:3px;">
+          ${t.time?`<span class="m-task-time">⏰ ${fmt12(t.time)}</span>`:''}
+          ${t.time&&t.reminder!=null?`<span style="font-size:10px;font-weight:700;background:var(--amber-bg);color:var(--amber);padding:2px 7px;border-radius:6px;white-space:nowrap;">🔔 ${t.reminder===0?'at time':t.reminder+'min before'}</span>`:''}
+        </div>
       </div>
       <button class="t-edit" onclick="startEditTask(${idx})">✏️</button>
       <button class="t-del" onclick="delTask(${idx})">×</button>
