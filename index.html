@@ -713,7 +713,7 @@ let selectedDate=null,editingIdx=-1,drumState={h:0,m:0,ap:0};
 let apiKey='',binId='';
 let data={items:[],tasks:[],todos:[],transactions:[],fixed:[]};
 let lastSync=null,pollTimer=null,saving=false;
-let swReg=null,swRegistered=false,notifInitDone=false;
+let swReg=null,swRegistered=false,notifInitDone=false,pendingTimers={};
 
 try{
   const d=JSON.parse(localStorage.getItem('fb_v4')||'{}');
@@ -1401,44 +1401,14 @@ function toggleChore(i){data.chores[i].done=!data.chores[i].done;renderChores();
 function delChore(i){data.chores.splice(i,1);renderChores();push();}
 
 // NOTIFICATIONS
-const SW_CODE=`
-self.addEventListener('message',function(e){
-  var d=e.data;
-  if(d&&d.type==='SCHEDULE'){
-    var delay=d.fireTime-Date.now();
-    if(delay<0)return;
-    setTimeout(function(){
-      self.registration.showNotification(d.title,{body:d.body,tag:d.tag,requireInteraction:false,data:d.data||{}});
-    },delay);
-  }
-  if(d&&d.type==='CANCEL'){
-    self.registration.getNotifications({tag:d.tag}).then(function(ns){ns.forEach(function(n){n.close();});});
-  }
-});
-self.addEventListener('notificationclick',function(e){
-  e.notification.close();
-  var date=(e.notification.data&&e.notification.data.date)?e.notification.data.date:'';
-  var base=self.location.href.split('?')[0];
-  var url=date?base+'?date='+date:base;
-  e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(function(cs){
-    for(var i=0;i<cs.length;i++){if('focus' in cs[i])return cs[i].focus();}
-    if(clients.openWindow)return clients.openWindow(url);
-  }));
-});
-`;
+// NOTIFICATION ENGINE
 function registerSW(){
   if(swRegistered||!('serviceWorker' in navigator))return;
   swRegistered=true;
-  try{
-    const blob=new Blob([SW_CODE],{type:'application/javascript'});
-    const blobUrl=URL.createObjectURL(blob);
-    navigator.serviceWorker.register(blobUrl).then(r=>{
-      swReg=r;
-      // Wait for SW to become active
-      const activate=()=>{if(r.active){scheduleAllReminders();}else{r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='activated'){swReg=r;scheduleAllReminders();}});});}};
-      activate();
-    }).catch(()=>{});
-  }catch(e){}
+  navigator.serviceWorker.register('./sw.js').then(reg=>{
+    swReg=reg;
+    navigator.serviceWorker.ready.then(r=>{swReg=r;scheduleAllReminders();});
+  }).catch(()=>{}); // SW unavailable — fallback to main-thread timers
 }
 function requestNotifPermission(){
   if(!('Notification' in window))return;
@@ -1446,7 +1416,7 @@ function requestNotifPermission(){
   localStorage.setItem('fb_notif_asked','1');
   if(Notification.permission==='granted'){renderPermBanner();return;}
   if(Notification.permission==='denied'){renderPermBanner();return;}
-  Notification.requestPermission().then(()=>renderPermBanner());
+  Notification.requestPermission().then(()=>{renderPermBanner();if(Notification.permission==='granted')scheduleAllReminders();});
 }
 function renderPermBanner(){
   const el=document.getElementById('notif-banner');if(!el)return;
@@ -1454,21 +1424,31 @@ function renderPermBanner(){
 }
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 function scheduleNotification(task){
-  if(!swReg||!task.time||task.reminder===null||task.reminder===undefined)return;
+  if(!task.time||task.reminder===null||task.reminder===undefined)return;
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
   const id=task.id||(task.id=genId());
-  const[hh,mm]=task.time.split(':').map(Number);
-  const fire=task.date?new Date(task.date+'T'+task.time+':00'):new Date();
-  if(task.date){/* date already applied via ISO string */}else{fire.setHours(hh,mm,0,0);}
+  const fire=new Date(task.date+'T'+task.time+':00');
   const fireTime=fire.getTime()-(task.reminder*60000);
   if(fireTime<=Date.now())return;
+  const[hh,mm]=task.time.split(':').map(Number);
   const ap=hh>=12?'PM':'AM';const h12=hh%12||12;const timeStr=h12+':'+(mm<10?'0'+mm:mm)+' '+ap;
+  const title='Reminder: '+task.name;
   const body=(task.date===todayStr?'Today':'On '+task.date)+' at '+timeStr;
-  const send=()=>swReg.active&&swReg.active.postMessage({type:'SCHEDULE',tag:id,title:'Reminder: '+task.name,body,fireTime,data:{date:task.date}});
-  swReg.active?send():navigator.serviceWorker.ready.then(()=>{swReg=navigator.serviceWorker.controller?{active:navigator.serviceWorker.controller}:swReg;send();});
+  // Try SW first (background delivery), fall back to main-thread timer
+  if(swReg&&swReg.active){
+    swReg.active.postMessage({type:'SCHEDULE',tag:id,title,body,fireTime,data:{date:task.date}});
+  } else {
+    if(pendingTimers[id])clearTimeout(pendingTimers[id]);
+    pendingTimers[id]=setTimeout(()=>{
+      if(Notification.permission==='granted')new Notification(title,{body,tag:id});
+      delete pendingTimers[id];
+    },fireTime-Date.now());
+  }
 }
 function cancelNotification(taskId){
-  if(!swReg||!swReg.active||!taskId)return;
-  swReg.active.postMessage({type:'CANCEL',tag:taskId});
+  if(!taskId)return;
+  if(pendingTimers[taskId]){clearTimeout(pendingTimers[taskId]);delete pendingTimers[taskId];}
+  if(swReg&&swReg.active)swReg.active.postMessage({type:'CANCEL',tag:taskId});
 }
 function scheduleAllReminders(){
   (data.tasks||[]).forEach(t=>{if(t.time&&t.reminder!=null)scheduleNotification(t);});
