@@ -782,7 +782,7 @@ function updateHomeFeatCards(){
 }
 function setHomeGreeting(){
   const h=new Date().getHours();
-  const greet=h<12?'Good morning':'h<18?'Good afternoon':'Good evening';
+  const greet=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
   const emoji=h<12?'☀️':h<18?'🌤️':'🌙';
   const msgs=['Have a wonderful day! 💚','You\'ve got this, team! 💪','Together is better 🏡','Making memories 🌟','Another great day! ✨','Strength in togetherness 💫','Happy family, happy life 🌈'];
   const d=new Date();
