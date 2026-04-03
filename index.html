@@ -378,20 +378,6 @@ input[type=number]{-moz-appearance:textfield;}
 .fixed-edit-panel{background:var(--dark);border-radius:14px;padding:1rem;margin-bottom:.75rem;border:1px solid rgba(62,207,122,0.3);}
 .fixed-edit-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:.6rem;}
 
-/* ── QUICK CAPTURE FAB ── */
-.qc-fab{position:fixed;bottom:calc(1.5rem + env(safe-area-inset-bottom));right:1.25rem;width:56px;height:56px;border-radius:50%;background:var(--green);border:none;font-size:28px;line-height:1;color:#0F1923;cursor:pointer;box-shadow:0 4px 20px rgba(74,222,128,0.4);z-index:200;display:flex;align-items:center;justify-content:center;transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
-.qc-fab:hover{transform:scale(1.1);}
-.qc-fab:active{transform:scale(.93);}
-.qc-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);}
-.qc-overlay.open{display:flex;}
-.qc-sheet{background:var(--card2);border-radius:24px 24px 0 0;padding:1rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));width:100%;max-width:430px;animation:slideUp .25s cubic-bezier(.34,1.2,.64,1);}
-.qc-tabs{display:flex;gap:6px;margin-bottom:1rem;}
-.qc-tab{flex:1;padding:8px 4px;border-radius:10px;border:1px solid var(--border);background:transparent;font-size:11px;font-weight:700;font-family:'Nunito',sans-serif;color:var(--text2);cursor:pointer;transition:all .15s;text-align:center;}
-.qc-tab.qc-active{background:var(--green-bg);border-color:rgba(62,207,122,0.4);color:var(--green);}
-.qc-panel{display:none;}
-.qc-panel.qc-active{display:block;}
-.qc-date-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
-.qc-text-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
 </style>
 </head>
 <body>
@@ -682,55 +668,6 @@ input[type=number]{-moz-appearance:textfield;}
   </div>
 </div>
 
-<!-- ══ QUICK CAPTURE FAB ══ -->
-<button class="qc-fab" id="qc-fab">＋</button>
-
-<!-- ══ QUICK CAPTURE SHEET ══ -->
-<div class="qc-overlay" id="qc-overlay" onclick="qcOverlayClick(event)">
-  <div class="qc-sheet">
-    <div class="modal-handle"></div>
-    <div class="qc-tabs">
-      <button class="qc-tab qc-active" id="qct-shop" onclick="switchQCTab('shop')">🛒 Shop</button>
-      <button class="qc-tab" id="qct-todo" onclick="switchQCTab('todo')">✅ To-do</button>
-      <button class="qc-tab" id="qct-cal" onclick="switchQCTab('cal')">📅 Cal</button>
-      <button class="qc-tab" id="qct-budget" onclick="switchQCTab('budget')">💰 Budget</button>
-    </div>
-    <!-- Shopping -->
-    <div class="qc-panel qc-active" id="qcp-shop">
-      <div class="add-row">
-        <input class="qc-text-input" type="text" id="qc-shop-input" placeholder="Add item…" onkeydown="if(event.key==='Enter')qcAddShop()"/>
-        <button class="primary-btn" onclick="qcAddShop()">Add ＋</button>
-      </div>
-    </div>
-    <!-- To-do -->
-    <div class="qc-panel" id="qcp-todo">
-      <div class="add-row">
-        <input class="qc-text-input" type="text" id="qc-todo-input" placeholder="Add task…" onkeydown="if(event.key==='Enter')qcAddTodo()"/>
-        <button class="primary-btn" onclick="qcAddTodo()">Add ＋</button>
-      </div>
-    </div>
-    <!-- Calendar -->
-    <div class="qc-panel" id="qcp-cal">
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <input class="qc-text-input" type="text" id="qc-cal-input" placeholder="Task name…" onkeydown="if(event.key==='Enter')qcAddCal()"/>
-        <input class="qc-date-input" type="date" id="qc-cal-date"/>
-        <button class="primary-btn" style="width:100%;" onclick="qcAddCal()">Add ＋</button>
-      </div>
-    </div>
-    <!-- Budget -->
-    <div class="qc-panel" id="qcp-budget">
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div class="tx-type-row">
-          <button class="tx-type-btn" id="qc-type-income" onclick="setQCTxType('income')">＋ Income</button>
-          <button class="tx-type-btn sel-expense" id="qc-type-expense" onclick="setQCTxType('expense')">− Expense</button>
-        </div>
-        <input class="qc-text-input" type="text" id="qc-budget-name" placeholder="Description…" onkeydown="if(event.key==='Enter')qcAddBudget()"/>
-        <input class="qc-text-input" type="number" id="qc-budget-amount" placeholder="Amount (€)" min="0" step="0.01" onkeydown="if(event.key==='Enter')qcAddBudget()"/>
-        <button class="primary-btn" style="width:100%;" onclick="qcAddBudget()">Add ＋</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- DAY MODAL -->
 <div class="overlay" id="day-overlay" onclick="overlayClick(event)">
@@ -1432,93 +1369,6 @@ function openSummaryModal(type){
   document.getElementById('cat-overlay').classList.add('open');
 }
 
-// QUICK CAPTURE
-let qcTxType='expense';
-let _fabPos=JSON.parse(localStorage.getItem('fb_fab_pos')||'null');
-function initFab(){
-  const fab=document.getElementById('qc-fab');if(!fab)return;
-  // Restore saved position
-  if(_fabPos){
-    const cl=Math.max(4,Math.min(window.innerWidth-60,_fabPos.left));
-    const ct=Math.max(4,Math.min(window.innerHeight-60,_fabPos.top));
-    fab.style.bottom='';fab.style.right='';fab.style.left=cl+'px';fab.style.top=ct+'px';
-  }
-  let sx=0,sy=0,sl=0,st=0,moved=false,down=false;
-  function start(x,y){
-    const r=fab.getBoundingClientRect();
-    sx=x;sy=y;sl=r.left;st=r.top;moved=false;down=true;
-    fab.style.transition='none';fab.style.bottom='';fab.style.right='';
-    fab.style.left=sl+'px';fab.style.top=st+'px';
-  }
-  function move(x,y){
-    if(!down)return;
-    const dx=x-sx,dy=y-sy;
-    if(!moved&&Math.abs(dx)<5&&Math.abs(dy)<5)return;
-    moved=true;
-    fab.style.left=Math.max(4,Math.min(window.innerWidth-60,sl+dx))+'px';
-    fab.style.top=Math.max(4,Math.min(window.innerHeight-60,st+dy))+'px';
-  }
-  function end(){
-    if(!down)return;down=false;
-    fab.style.transition='';
-    if(moved){_fabPos={left:parseInt(fab.style.left),top:parseInt(fab.style.top)};localStorage.setItem('fb_fab_pos',JSON.stringify(_fabPos));}
-    else openQC();
-  }
-  fab.addEventListener('touchstart',e=>{e.preventDefault();start(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
-  fab.addEventListener('touchmove',e=>{e.preventDefault();move(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
-  fab.addEventListener('touchend',end,{passive:false});
-  fab.addEventListener('mousedown',e=>{e.preventDefault();start(e.clientX,e.clientY);});
-  window.addEventListener('mousemove',e=>{move(e.clientX,e.clientY);});
-  window.addEventListener('mouseup',end);
-}
-function openQC(){
-  document.getElementById('qc-overlay').classList.add('open');
-  document.getElementById('qc-cal-date').value=fmtDate(new Date());
-  setTimeout(()=>{const p=document.querySelector('.qc-panel.qc-active');if(p){const i=p.querySelector('input[type=text]');if(i)i.focus();}},300);
-}
-function closeQC(){document.getElementById('qc-overlay').classList.remove('open');}
-function qcOverlayClick(e){if(e.target===document.getElementById('qc-overlay'))closeQC();}
-function switchQCTab(tab){
-  document.querySelectorAll('.qc-tab').forEach(el=>el.classList.remove('qc-active'));
-  document.querySelectorAll('.qc-panel').forEach(el=>el.classList.remove('qc-active'));
-  document.getElementById('qct-'+tab).classList.add('qc-active');
-  document.getElementById('qcp-'+tab).classList.add('qc-active');
-  setTimeout(()=>{const i=document.querySelector('#qcp-'+tab+' input[type=text]');if(i)i.focus();},100);
-}
-function setQCTxType(type){
-  qcTxType=type;
-  document.getElementById('qc-type-income').className='tx-type-btn'+(type==='income'?' sel-income':'');
-  document.getElementById('qc-type-expense').className='tx-type-btn'+(type==='expense'?' sel-expense':'');
-}
-function qcAddShop(){
-  const inp=document.getElementById('qc-shop-input');const name=inp.value.trim();if(!name)return;
-  data.items.push({name,qty:1,store:selStore,done:false});
-  inp.value='';renderShop();push();closeQC();
-}
-function qcAddTodo(){
-  const inp=document.getElementById('qc-todo-input');const name=inp.value.trim();if(!name)return;
-  data.todos.push({name,done:false});
-  inp.value='';renderTodos();updateHomeFeatCards();push();closeQC();
-}
-function qcAddCal(){
-  const name=document.getElementById('qc-cal-input').value.trim();
-  const date=document.getElementById('qc-cal-date').value;
-  if(!name||!date)return;
-  const task={name,date,time:'',done:false,id:genId(),reminder:null,repeat:'',completedDates:[]};
-  data.tasks.push(task);
-  document.getElementById('qc-cal-input').value='';
-  renderCal();updateHomeFeatCards();push();closeQC();
-}
-function qcAddBudget(){
-  const name=document.getElementById('qc-budget-name').value.trim();
-  const amount=parseFloat(document.getElementById('qc-budget-amount').value)||0;
-  if(!name||!amount)return;
-  data.transactions.push({name,amount,cat:'other',date:fmtDate(new Date()),type:qcTxType});
-  document.getElementById('qc-budget-name').value='';
-  document.getElementById('qc-budget-amount').value='';
-  renderBudget();push();closeQC();
-}
-
 // DRUM
 const HOURS=[12,1,2,3,4,5,6,7,8,9,10,11],MINS=['00','05','10','15','20','25','30','35','40','45','50','55'],AMPM=['AM','PM'];
 function buildDrum(colId,items,key){
@@ -1841,7 +1691,6 @@ document.getElementById('todo-input').addEventListener('keydown',e=>{if(e.key===
 buildStoreGrid();
 setHomeGreeting();
 updateHomeFeatCards();
-initFab();
 // Fire missed reminders when app comes back to foreground
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkMissedReminders();});
 // Prevent pinch-to-zoom (CSS touch-action handles it; these catch iOS gesture API)
