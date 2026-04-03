@@ -392,22 +392,6 @@ input[type=number]{-moz-appearance:textfield;}
 .qc-panel.qc-active{display:block;}
 .qc-date-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
 .qc-text-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
-
-/* ── VOICE ── */
-.voice-fab{position:fixed;bottom:calc(1.5rem + env(safe-area-inset-bottom));left:1.25rem;width:48px;height:48px;border-radius:50%;background:var(--card2);border:1px solid var(--border);font-size:20px;color:var(--text2);cursor:pointer;box-shadow:var(--shadow);z-index:200;display:flex;align-items:center;justify-content:center;-webkit-user-select:none;user-select:none;transition:all .2s;}
-.voice-fab.vf-on{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 0 10px rgba(248,113,113,0.2),var(--shadow);animation:vpulse 1s infinite;}
-@keyframes vpulse{0%,100%{box-shadow:0 0 0 10px rgba(248,113,113,0.2),var(--shadow);}50%{box-shadow:0 0 0 18px rgba(248,113,113,0.07),var(--shadow);}}
-.voice-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:410;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);}
-.voice-overlay.open{display:flex;}
-.voice-sheet{background:var(--card2);border-radius:24px 24px 0 0;padding:1rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));width:100%;max-width:430px;animation:slideUp .25s cubic-bezier(.34,1.2,.64,1);}
-.voice-heard{font-size:13px;color:var(--text2);font-style:italic;margin-bottom:.85rem;padding:9px 13px;background:var(--dark2);border-radius:10px;border:1px solid var(--border);line-height:1.6;direction:rtl;text-align:right;}
-.vc-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin:10px 0 4px;}
-.vc-inp{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:15px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;direction:rtl;text-align:right;}
-.vc-inp:focus{border-color:var(--green);}
-.vc-inp.ltr{direction:ltr;text-align:left;}
-.vc-store-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
-.vc-store-btn{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--dark2);font-size:11px;font-weight:700;font-family:'Nunito',sans-serif;color:var(--text2);cursor:pointer;transition:all .15s;}
-.vc-store-btn.vc-sel{background:var(--green-bg);border-color:rgba(62,207,122,0.4);color:var(--green);}
 </style>
 </head>
 <body>
@@ -744,22 +728,6 @@ input[type=number]{-moz-appearance:textfield;}
         <input class="qc-text-input" type="number" id="qc-budget-amount" placeholder="Amount (€)" min="0" step="0.01" onkeydown="if(event.key==='Enter')qcAddBudget()"/>
         <button class="primary-btn" style="width:100%;" onclick="qcAddBudget()">Add ＋</button>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ VOICE FAB ══ -->
-<button class="voice-fab" id="voice-fab" title="Hold to speak (Egyptian Arabic)">🎤</button>
-
-<!-- ══ VOICE CONFIRM SHEET ══ -->
-<div class="voice-overlay" id="voice-overlay" onclick="voiceOvClick(event)">
-  <div class="voice-sheet">
-    <div class="modal-handle"></div>
-    <div class="voice-heard" id="voice-heard"></div>
-    <div id="voice-fields"></div>
-    <div style="display:flex;gap:8px;margin-top:1rem;">
-      <button onclick="cancelVoice()" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:14px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;">Cancel</button>
-      <button onclick="confirmVoice()" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--green);color:#0F1923;font-size:14px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;">✓ Add</button>
     </div>
   </div>
 </div>
@@ -1464,189 +1432,6 @@ function openSummaryModal(type){
   document.getElementById('cat-overlay').classList.add('open');
 }
 
-// VOICE COMMANDS (Egyptian Arabic)
-const AR_NUMS={
-  'صفر':0,'واحد':1,'اتنين':2,'اثنين':2,'تنين':2,
-  'تلاتة':3,'تلاته':3,'ثلاثة':3,
-  'أربعة':4,'اربعة':4,'أربع':4,'اربع':4,
-  'خمسة':5,'خمسه':5,'خمس':5,
-  'ستة':6,'سته':6,'ست':6,
-  'سبعة':7,'سبعه':7,'سبع':7,
-  'تمانية':8,'تمانيه':8,'ثمانية':8,
-  'تسعة':9,'تسعه':9,
-  'عشرة':10,'عشره':10,'عشر':10,
-  'خمستاشر':15,'خمسطاشر':15,
-  'عشرين':20,'تلاتين':30,'أربعين':40,'خمسين':50,'ستين':60,'سبعين':70,'تمانين':80,'تسعين':90,
-  'مية':100,'مئة':100,'ميه':100,'مايه':100,'ميتين':200,'تلتميه':300,'خمسميه':500,
-  'ألف':1000,'الف':1000
-};
-const STORE_AR={
-  'سلطان':'sultan','السلطان':'sultan',
-  'السورى':'souri','السوري':'souri','سورى':'souri',
-  'سبار':'spar','سبر':'spar',
-  'ليدل':'lidl',
-  'بيلا':'billa','بيلى':'billa',
-  'أكشن':'action','اكشن':'action',
-  'دي ام':'dm'
-};
-let vcParsed=null,vcStore='other',voiceRec=null,voiceOn=false;
-
-function arToInt(text){
-  const m1=text.match(/[٠-٩]+/);
-  if(m1)return parseInt(m1[0].replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-  const m2=text.match(/\b(\d+)\b/);if(m2)return parseInt(m2[1]);
-  for(const[w,n]of Object.entries(AR_NUMS))if(text.includes(w))return n;
-  return 1;
-}
-function cleanAr(text){
-  return text
-    .replace(/أضف|اضف|اشتري|اشترى|عاوز|عايز|محتاج|محتاجه|جيب|هات|احضر|لازم نشتري|لازم/g,'')
-    .replace(/من عند|من الـ|من|على|في|و\b/g,' ')
-    .replace(/[٠-٩\d]+/g,'')
-    .replace(new RegExp(Object.keys(AR_NUMS).join('|'),'g'),'')
-    .replace(/كيلو|كيلوجرام|جرام|لتر|لترات|علبة|علب|حبة|حبات|كيس|أكياس|قطعة|قطع|وحدة|باكيت/g,'')
-    .trim().replace(/\s+/g,' ');
-}
-
-function initVoice(){
-  const fab=document.getElementById('voice-fab');if(!fab)return;
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){fab.style.display='none';return;}
-  voiceRec=new SR();
-  voiceRec.lang='ar-EG';voiceRec.continuous=false;voiceRec.interimResults=false;voiceRec.maxAlternatives=3;
-  voiceRec.onresult=e=>{const tx=e.results[0][0].transcript;stopVoice();processVC(tx);};
-  voiceRec.onerror=()=>stopVoice();
-  voiceRec.onend=()=>stopVoice();
-  fab.addEventListener('touchstart',e=>{e.preventDefault();startVoice();},{passive:false});
-  fab.addEventListener('touchend',e=>{e.preventDefault();stopVoice();},{passive:false});
-  fab.addEventListener('mousedown',e=>{e.preventDefault();startVoice();});
-  window.addEventListener('mouseup',()=>{if(voiceOn)stopVoice();});
-}
-function startVoice(){
-  if(!voiceRec||voiceOn)return;
-  try{voiceRec.start();voiceOn=true;document.getElementById('voice-fab').classList.add('vf-on');}catch(e){}
-}
-function stopVoice(){
-  if(!voiceOn)return;voiceOn=false;
-  document.getElementById('voice-fab').classList.remove('vf-on');
-  try{voiceRec.stop();}catch(e){}
-}
-
-function processVC(text){
-  const isBudget=/صرفت|دفعت|مصروف|جنيه|يورو|دولار|فلوس/.test(text);
-  const isCal=/موعد|اجتماع|ميعاد|لقاء|سبوينتمنت/.test(text)&&!isBudget;
-  const isTodo=/مهمة|تاسك|فاكرني|تذكرني|مش ناسي/.test(text)&&!isBudget&&!isCal;
-  if(isBudget)vcBudget(text);
-  else if(isCal)vcCal(text);
-  else if(isTodo)vcTodo(text);
-  else vcShop(text);
-}
-
-function vcShop(text){
-  let store=selStore;
-  for(const[ar,id]of Object.entries(STORE_AR))if(text.includes(ar)){store=id;break;}
-  const qty=arToInt(text);
-  let item=text;
-  for(const ar of Object.keys(STORE_AR))item=item.replace(new RegExp(ar,'g'),'');
-  item=cleanAr(item);
-  vcParsed={type:'shop',item,qty,store};vcStore=store;showVC(text);
-}
-function vcTodo(text){
-  const task=text.replace(/أضف|اضف|مهمة|تاسك|فاكرني|تذكرني|مش ناسي|إنك|انك/g,'').trim().replace(/\s+/g,' ');
-  vcParsed={type:'todo',task};showVC(text);
-}
-function vcCal(text){
-  let name=text.replace(/أضف|اضف|موعد|اجتماع|ميعاد|لقاء/g,'').trim().replace(/\s+/g,' ');
-  const DAY_MAP={'الأحد':0,'الاثنين':1,'الاتنين':1,'الثلاثاء':2,'التلات':2,'الأربعاء':3,'الاربع':3,'الخميس':4,'الجمعة':5,'الجمعه':5,'السبت':6,'الحد':0};
-  let date=fmtDate(new Date());
-  for(const[ar,dow]of Object.entries(DAY_MAP)){
-    if(text.includes(ar)){
-      const d=new Date(),diff=(dow-d.getDay()+7)%7||7;d.setDate(d.getDate()+diff);
-      date=fmtDate(d);name=name.replace(ar,'').trim();break;
-    }
-  }
-  vcParsed={type:'cal',name,date};showVC(text);
-}
-function vcBudget(text){
-  const isIncome=/دخل|راتب|مكسب|استلمت|اشتلمت/.test(text);
-  const amount=arToInt(text);
-  let desc=text.replace(/صرفت|دفعت|مصروف|دخل|راتب|جنيه|يورو|دولار|فلوس|على|في/g,' ')
-    .replace(/[٠-٩\d]+/g,'');
-  for(const w of Object.keys(AR_NUMS))desc=desc.replace(new RegExp(w,'g'),'');
-  desc=desc.trim().replace(/\s+/g,' ');
-  vcParsed={type:'budget',desc,amount,txType:isIncome?'income':'expense'};showVC(text);
-}
-
-function showVC(transcript){
-  if(!vcParsed)return;
-  document.getElementById('voice-heard').textContent='"'+transcript+'"';
-  const p=vcParsed;
-  const icons={shop:'🛒 Shopping',todo:'✅ To-do',cal:'📅 Calendar',budget:'💰 Budget'};
-  let h=`<div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">${icons[p.type]}</div>`;
-  if(p.type==='shop'){
-    h+=`<div class="vc-lbl">Item</div><input class="vc-inp" id="vc-item" type="text"/>
-    <div style="display:flex;gap:12px;align-items:center;margin-top:10px;">
-      <div class="vc-lbl" style="margin:0;">Qty</div>
-      <div class="qty-wrap"><button class="qty-btn" onclick="vcQty(-1)">−</button><input class="qty-val" id="vc-qty" type="number" value="${p.qty}" min="1" readonly/><button class="qty-btn" onclick="vcQty(1)">+</button></div>
-    </div>
-    <div class="vc-lbl">Store</div>
-    <div class="vc-store-row" id="vc-store-row">${STORES.map(s=>`<button class="vc-store-btn${s.id===vcStore?' vc-sel':''}" data-sid="${s.id}" onclick="vcPickStore('${s.id}')">${s.icon?s.icon+' ':''}${s.label}</button>`).join('')}</div>`;
-  }else if(p.type==='todo'){
-    h+=`<div class="vc-lbl">Task</div><input class="vc-inp" id="vc-todo" type="text"/>`;
-  }else if(p.type==='cal'){
-    h+=`<div class="vc-lbl">Task</div><input class="vc-inp" id="vc-cname" type="text"/>
-    <div class="vc-lbl">Date</div><input class="vc-inp ltr" id="vc-cdate" type="date"/>`;
-  }else if(p.type==='budget'){
-    h+=`<div style="display:flex;gap:8px;margin-bottom:8px;">
-      <button id="vc-inc" class="tx-type-btn${p.txType==='income'?' sel-income':''}" onclick="vcTxType('income')">＋ Income</button>
-      <button id="vc-exp" class="tx-type-btn${p.txType==='expense'?' sel-expense':''}" onclick="vcTxType('expense')">− Expense</button>
-    </div>
-    <div class="vc-lbl">Description</div><input class="vc-inp" id="vc-bdesc" type="text"/>
-    <div class="vc-lbl">Amount</div><input class="vc-inp ltr" id="vc-bamt" type="number" value="${p.amount}" min="0" step="0.01"/>`;
-  }
-  document.getElementById('voice-fields').innerHTML=h;
-  // Set text values after DOM update
-  if(p.type==='shop')document.getElementById('vc-item').value=p.item;
-  else if(p.type==='todo')document.getElementById('vc-todo').value=p.task;
-  else if(p.type==='cal'){document.getElementById('vc-cname').value=p.name;document.getElementById('vc-cdate').value=p.date;}
-  else if(p.type==='budget')document.getElementById('vc-bdesc').value=p.desc;
-  document.getElementById('voice-overlay').classList.add('open');
-}
-function vcQty(d){const el=document.getElementById('vc-qty');el.value=Math.max(1,parseInt(el.value||1)+d);}
-function vcPickStore(id){
-  vcStore=id;
-  document.querySelectorAll('.vc-store-btn').forEach(b=>b.classList.toggle('vc-sel',b.dataset.sid===id));
-}
-function vcTxType(type){
-  vcParsed.txType=type;
-  document.getElementById('vc-inc').className='tx-type-btn'+(type==='income'?' sel-income':'');
-  document.getElementById('vc-exp').className='tx-type-btn'+(type==='expense'?' sel-expense':'');
-}
-function cancelVoice(){document.getElementById('voice-overlay').classList.remove('open');vcParsed=null;}
-function voiceOvClick(e){if(e.target===document.getElementById('voice-overlay'))cancelVoice();}
-function confirmVoice(){
-  if(!vcParsed)return;const p=vcParsed;
-  if(p.type==='shop'){
-    const name=document.getElementById('vc-item').value.trim();if(!name)return;
-    const qty=parseInt(document.getElementById('vc-qty').value)||1;
-    data.items.push({name,qty,store:vcStore,done:false});renderShop();push();
-  }else if(p.type==='todo'){
-    const name=document.getElementById('vc-todo').value.trim();if(!name)return;
-    data.todos.push({name,done:false});renderTodos();updateHomeFeatCards();push();
-  }else if(p.type==='cal'){
-    const name=document.getElementById('vc-cname').value.trim(),date=document.getElementById('vc-cdate').value;
-    if(!name||!date)return;
-    data.tasks.push({name,date,time:'',done:false,id:genId(),reminder:null,repeat:'',completedDates:[]});
-    renderCal();updateHomeFeatCards();push();
-  }else if(p.type==='budget'){
-    const desc=document.getElementById('vc-bdesc').value.trim(),amount=parseFloat(document.getElementById('vc-bamt').value)||0;
-    if(!desc||!amount)return;
-    data.transactions.push({name:desc,amount,cat:'other',date:fmtDate(new Date()),type:p.txType});
-    renderBudget();push();
-  }
-  cancelVoice();
-}
-
 // QUICK CAPTURE
 let qcTxType='expense';
 let _fabPos=JSON.parse(localStorage.getItem('fb_fab_pos')||'null');
@@ -2057,7 +1842,6 @@ buildStoreGrid();
 setHomeGreeting();
 updateHomeFeatCards();
 initFab();
-initVoice();
 // Fire missed reminders when app comes back to foreground
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkMissedReminders();});
 // Prevent pinch-to-zoom (CSS touch-action handles it; these catch iOS gesture API)
