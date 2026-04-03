@@ -488,7 +488,10 @@ input[type=number]{-moz-appearance:textfield;}
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">‹</button>
     <div class="topbar-title">📅 Calendar</div>
-    <button class="topbar-action" onclick="printMonth()" title="Print">🖨️</button>
+    <div style="display:flex;gap:6px;">
+      <button class="topbar-action" onclick="testNotification()" title="Test notification">🔔</button>
+      <button class="topbar-action" onclick="printMonth()" title="Print">🖨️</button>
+    </div>
   </div>
   <div id="notif-banner" class="notif-banner" style="display:none;">🔔 Notifications blocked. Enable them in device Settings → Family Board.</div>
   <div class="scroll-content">
@@ -1437,15 +1440,18 @@ function scheduleNotification(task){
   const ap=hh>=12?'PM':'AM';const h12=hh%12||12;const timeStr=h12+':'+(mm<10?'0'+mm:mm)+' '+ap;
   const title='Reminder: '+task.name;
   const body=(task.date===todayStr?'Today':'On '+task.date)+' at '+timeStr;
-  // Try SW first (background delivery), fall back to main-thread timer
+  const msg={type:'SCHEDULE',tag:id,title,body,fireTime,data:{date:task.date}};
+  // Always schedule main-thread timer (fires while app is open)
+  if(pendingTimers[id])clearTimeout(pendingTimers[id]);
+  pendingTimers[id]=setTimeout(()=>{
+    if(Notification.permission==='granted')new Notification(title,{body,tag:id});
+    delete pendingTimers[id];
+  },fireTime-Date.now());
+  // Also send to SW for background delivery (same tag = deduplicates if both fire)
   if(swReg&&swReg.active){
-    swReg.active.postMessage({type:'SCHEDULE',tag:id,title,body,fireTime,data:{date:task.date}});
-  } else {
-    if(pendingTimers[id])clearTimeout(pendingTimers[id]);
-    pendingTimers[id]=setTimeout(()=>{
-      if(Notification.permission==='granted')new Notification(title,{body,tag:id});
-      delete pendingTimers[id];
-    },fireTime-Date.now());
+    swReg.active.postMessage(msg);
+  } else if('serviceWorker' in navigator){
+    navigator.serviceWorker.ready.then(r=>{swReg=r;if(r.active)r.active.postMessage(msg);}).catch(()=>{});
   }
 }
 function cancelNotification(taskId){
@@ -1455,6 +1461,11 @@ function cancelNotification(taskId){
 }
 function scheduleAllReminders(){
   (data.tasks||[]).forEach(t=>{if(t.time&&t.reminder!=null)scheduleNotification(t);});
+}
+function testNotification(){
+  if(!('Notification' in window)){alert('Notifications not supported on this browser.');return;}
+  if(Notification.permission!=='granted'){alert('Permission not granted. Open Calendar first to enable notifications.');return;}
+  new Notification('🔔 Family Board test',{body:'Notifications are working!',tag:'fb-test'});
 }
 
 // INIT
