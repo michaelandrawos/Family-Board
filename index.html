@@ -454,6 +454,27 @@ input[type=number]{-moz-appearance:textfield;}
     </div>
 
   </div>
+
+  <!-- HOME BOTTOM -->
+  <div style="padding:0 1.25rem 2.5rem;">
+    <div id="home-next-card" style="display:none;margin-bottom:.75rem;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.1rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue);border-radius:3px 0 0 3px;"></div>
+      <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">📅 What's next</div>
+      <div id="home-next-name" style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:3px;"></div>
+      <div id="home-next-meta" style="font-size:12px;font-weight:600;color:var(--text2);"></div>
+    </div>
+    <div id="home-spend-card" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.1rem;">
+      <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">💰 This month</div>
+      <div style="display:flex;gap:12px;margin-bottom:10px;">
+        <div style="flex:1;"><div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:2px;">INCOME</div><div id="home-spend-income" style="font-size:17px;font-weight:900;color:var(--green);"></div></div>
+        <div style="flex:1;"><div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:2px;">SPENT</div><div id="home-spend-out" style="font-size:17px;font-weight:900;color:var(--red);"></div></div>
+        <div style="flex:1;"><div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:2px;">LEFT</div><div id="home-spend-left" style="font-size:17px;font-weight:900;"></div></div>
+      </div>
+      <div style="height:6px;background:var(--dark2);border-radius:6px;overflow:hidden;">
+        <div id="home-spend-bar" style="height:100%;border-radius:6px;transition:width .4s ease;"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ══ SHOPPING SCREEN ══ -->
@@ -788,6 +809,17 @@ function updateHomeFeatCards(){
   if(stripTasks)stripTasks.textContent=todayTasks.filter(t=>!t.done).length;
   if(stripChores)stripChores.textContent=pending;
   if(stripItems)stripItems.textContent=left;
+  // what's next
+  const now2=new Date();const nowTime=pad(now2.getHours())+':'+pad(now2.getMinutes());
+  const upcoming=(data.tasks||[]).filter(t=>!t.done&&(t.date>todayStr||(t.date===todayStr&&(!t.time||t.time>nowTime)))).sort((a,b)=>(a.date+' '+(a.time||'99:99')).localeCompare(b.date+' '+(b.time||'99:99')));
+  const nextCard=document.getElementById('home-next-card');
+  if(nextCard){if(upcoming.length){const n=upcoming[0];const tom=fmtDate(new Date(Date.now()+86400000));const dateLabel=n.date===todayStr?'Today':n.date===tom?'Tomorrow':fmtDisplay(n.date);document.getElementById('home-next-name').textContent=n.name;document.getElementById('home-next-meta').textContent=dateLabel+(n.time?' · '+fmt12(n.time):'');nextCard.style.display='block';}else{nextCard.style.display='none';}}
+  // monthly spending
+  const monthPfx=todayStr.slice(0,7);const monthTxs=(data.transactions||[]).filter(t=>(t.date||'').startsWith(monthPfx));const fixed2=data.fixed||[];
+  const mIncome=monthTxs.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0)+fixed2.filter(f=>f.type==='income').reduce((a,f)=>a+f.amount,0);
+  const mSpent=monthTxs.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0)+fixed2.filter(f=>f.type==='expense').reduce((a,f)=>a+f.amount,0);
+  const spendCard=document.getElementById('home-spend-card');
+  if(spendCard){if(mIncome>0||mSpent>0){const mLeft=mIncome-mSpent;document.getElementById('home-spend-income').textContent='+€'+mIncome.toFixed(0);document.getElementById('home-spend-out').textContent='-€'+mSpent.toFixed(0);const leftEl=document.getElementById('home-spend-left');leftEl.textContent=(mLeft>=0?'+':'-')+'€'+Math.abs(mLeft).toFixed(0);leftEl.style.color=mLeft>=0?'var(--green)':'var(--red)';const pct=mIncome>0?Math.min(100,(mSpent/mIncome)*100):100;const bar=document.getElementById('home-spend-bar');bar.style.width=pct+'%';bar.style.background=pct>90?'var(--red)':pct>65?'var(--amber)':'var(--green)';spendCard.style.display='block';}else{spendCard.style.display='none';}}
 }
 function setHomeGreeting(){
   const h=new Date().getHours();
