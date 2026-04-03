@@ -11,29 +11,29 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --dark:#0F1923;
-  --dark2:#162030;
-  --card:#1A2535;
-  --card2:#202E40;
-  --border:rgba(255,255,255,0.07);
-  --text:#FFFFFF;
-  --text2:rgba(255,255,255,0.55);
-  --text3:rgba(255,255,255,0.3);
-  --green:#3ECF7A;
-  --green-d:#1A8F4E;
-  --green-bg:rgba(62,207,122,0.12);
-  --amber:#F5A623;
-  --amber-bg:rgba(245,166,35,0.12);
-  --blue:#5B9CF6;
-  --blue-bg:rgba(91,156,246,0.12);
+  --dark:#0D0F14;
+  --dark2:#13161E;
+  --card:#181B26;
+  --card2:#1F2232;
+  --border:rgba(255,255,255,0.08);
+  --text:#F0F2FF;
+  --text2:rgba(240,242,255,0.52);
+  --text3:rgba(240,242,255,0.28);
+  --green:#4ADE80;
+  --green-d:#16A34A;
+  --green-bg:rgba(74,222,128,0.1);
+  --amber:#FBB54A;
+  --amber-bg:rgba(251,181,74,0.1);
+  --blue:#60A5FA;
+  --blue-bg:rgba(96,165,250,0.1);
   --purple:#A78BFA;
-  --purple-bg:rgba(167,139,250,0.12);
+  --purple-bg:rgba(167,139,250,0.1);
   --red:#F87171;
-  --red-bg:rgba(248,113,113,0.12);
+  --red-bg:rgba(248,113,113,0.1);
   --pink:#F472B6;
-  --pink-bg:rgba(244,114,182,0.12);
-  --r:18px;
-  --shadow:0 4px 24px rgba(0,0,0,0.3);
+  --pink-bg:rgba(244,114,182,0.1);
+  --r:20px;
+  --shadow:0 8px 32px rgba(0,0,0,0.5);
 }
 html{background:var(--dark);}
 body{
@@ -48,13 +48,16 @@ body{
 
 /* ── SCREENS ── */
 .screen{display:none;min-height:100vh;flex-direction:column;}
-.screen.active{display:flex;}
+.screen.active{display:flex;animation:screenIn .26s cubic-bezier(.34,1.1,.64,1);}
+@keyframes screenIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
 
 /* ── TOP BAR ── */
 .topbar{
   display:flex;align-items:center;justify-content:space-between;
   padding:calc(env(safe-area-inset-top)+52px) 1.25rem 14px;
-  background:var(--dark);
+  background:rgba(13,15,20,0.88);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:50;
 }
 .topbar-back{width:36px;height:36px;border:none;background:var(--card);border-radius:50%;cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .15s;}
@@ -69,13 +72,20 @@ body{
 /* ══════════════════════════════════════
    HOME SCREEN
 ══════════════════════════════════════ */
-.home-header{padding:calc(env(safe-area-inset-top)+1.5rem) 1.25rem 1rem;}
+.home-hero{padding:calc(env(safe-area-inset-top)+1.5rem) 1.25rem .75rem;}
+.home-hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;}
+.home-date{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
 .home-greeting{font-size:14px;color:var(--text2);font-weight:600;margin-bottom:4px;}
 .home-title{font-size:1.75rem;font-weight:900;color:var(--text);letter-spacing:-.02em;line-height:1.1;}
 .home-title span{color:var(--green);}
 .sync-row{display:flex;align-items:center;gap:8px;margin-top:10px;}
-.sync-pill{display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s;}
+.sync-pill{display:flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap;}
 .sync-pill:hover{background:var(--card2);}
+/* TODAY STRIP */
+.today-strip{display:flex;gap:8px;margin-bottom:.5rem;}
+.today-pill{flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 8px;text-align:center;}
+.today-n{display:block;font-size:1.4rem;font-weight:900;line-height:1;color:var(--text);}
+.today-l{display:block;font-size:10px;font-weight:700;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.05em;}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;}
 .dot.ok{background:var(--green);box-shadow:0 0 8px var(--green);}
 .dot.err{background:var(--red);}
@@ -99,19 +109,28 @@ body{
 .feat-card{
   background:var(--card);border:1px solid var(--border);
   border-radius:var(--r);padding:1.1rem 1rem 1rem;
-  cursor:pointer;transition:all .2s cubic-bezier(.34,1.2,.64,1);
+  cursor:pointer;transition:all .22s cubic-bezier(.34,1.2,.64,1);
   position:relative;overflow:hidden;min-height:130px;
   display:flex;flex-direction:column;justify-content:space-between;
 }
-.feat-card:hover{transform:scale(1.02);background:var(--card2);}
-.feat-card:active{transform:scale(.98);}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
+.feat-card-green::before{background:linear-gradient(90deg,var(--green),rgba(74,222,128,0));}
+.feat-card-green{background:linear-gradient(145deg,rgba(74,222,128,0.07),var(--card));}
+.feat-card-blue::before{background:linear-gradient(90deg,var(--blue),rgba(96,165,250,0));}
+.feat-card-blue{background:linear-gradient(145deg,rgba(96,165,250,0.07),var(--card));}
+.feat-card-amber::before{background:linear-gradient(90deg,var(--amber),rgba(251,181,74,0));}
+.feat-card-amber{background:linear-gradient(145deg,rgba(251,181,74,0.07),var(--card));}
+.feat-card-purple::before{background:linear-gradient(90deg,var(--purple),rgba(167,139,250,0));}
+.feat-card-purple{background:linear-gradient(145deg,rgba(167,139,250,0.07),var(--card));}
+.feat-card:hover{transform:translateY(-3px) scale(1.01);box-shadow:var(--shadow);}
+.feat-card:active{transform:scale(.97);}
 .feat-card-top{display:flex;flex-direction:column;gap:4px;}
 .feat-title{font-size:1rem;font-weight:800;color:var(--text);letter-spacing:-.01em;}
 .feat-sub{font-size:11px;color:var(--text2);font-weight:600;line-height:1.4;}
 .feat-icon-wrap{
-  width:52px;height:52px;border-radius:14px;
+  width:48px;height:48px;border-radius:14px;
   display:flex;align-items:center;justify-content:center;
-  font-size:26px;align-self:flex-end;margin-top:8px;
+  font-size:24px;align-self:flex-end;margin-top:8px;
 }
 
 /* STATS INSIDE FEAT CARDS */
@@ -364,14 +383,24 @@ input[type=number]{-moz-appearance:textfield;}
 
 <!-- ══ HOME SCREEN ══ -->
 <div class="screen active" id="screen-home">
-  <div class="home-header">
-    <div class="home-greeting">Welcome back 👋</div>
-    <div class="home-title">Family <span>Board</span></div>
-    <div class="sync-row">
-      <div class="sync-pill" onclick="toggleSetup()">
-        <div class="dot" id="sync-dot"></div>
-        <span id="sync-label">Not connected</span>
+  <div class="home-hero">
+    <div class="home-hero-top">
+      <div>
+        <div class="home-date" id="home-date"></div>
+        <div class="home-title">Family <span>Board</span></div>
+        <div class="home-greeting" id="home-greeting"></div>
       </div>
+      <div style="margin-top:4px;">
+        <div class="sync-pill" onclick="toggleSetup()">
+          <div class="dot" id="sync-dot"></div>
+          <span id="sync-label">Not connected</span>
+        </div>
+      </div>
+    </div>
+    <div class="today-strip">
+      <div class="today-pill"><span class="today-n" id="strip-tasks">0</span><span class="today-l">today</span></div>
+      <div class="today-pill"><span class="today-n" id="strip-chores">0</span><span class="today-l">chores</span></div>
+      <div class="today-pill"><span class="today-n" id="strip-items">0</span><span class="today-l">to buy</span></div>
     </div>
   </div>
 
@@ -394,28 +423,28 @@ input[type=number]{-moz-appearance:textfield;}
 
   <!-- FEATURE GRID -->
   <div class="feature-grid" id="feature-grid">
-    <div class="feat-card" onclick="openScreen('shop')" style="background:linear-gradient(135deg,#1A2535,#1E2E42);">
+    <div class="feat-card feat-card-green" onclick="openScreen('shop')">
       <div class="feat-card-top">
         <div class="feat-title">Shopping</div>
         <div class="feat-sub" id="shop-feat-sub">Your grocery list</div>
       </div>
       <div class="feat-icon-wrap" style="background:var(--green-bg);">🛒</div>
     </div>
-    <div class="feat-card" onclick="openScreen('cal')" style="background:linear-gradient(135deg,#1A2535,#1E2E42);">
+    <div class="feat-card feat-card-blue" onclick="openScreen('cal')">
       <div class="feat-card-top">
         <div class="feat-title">Calendar</div>
         <div class="feat-sub" id="cal-feat-sub">Family schedule</div>
       </div>
       <div class="feat-icon-wrap" style="background:var(--blue-bg);">📅</div>
     </div>
-    <div class="feat-card" onclick="openScreen('budget')" style="background:linear-gradient(135deg,#1A2535,#1E2E42);">
+    <div class="feat-card feat-card-amber" onclick="openScreen('budget')">
       <div class="feat-card-top">
         <div class="feat-title">Budget</div>
         <div class="feat-sub" id="budget-feat-sub">Track expenses</div>
       </div>
       <div class="feat-icon-wrap" style="background:var(--amber-bg);">💰</div>
     </div>
-    <div class="feat-card" onclick="openScreen('chores')" style="background:linear-gradient(135deg,#1A2535,#1E2E42);">
+    <div class="feat-card feat-card-purple" onclick="openScreen('chores')">
       <div class="feat-card-top">
         <div class="feat-title">Chores</div>
         <div class="feat-sub" id="chores-feat-sub">Family tasks</div>
@@ -739,6 +768,24 @@ function updateHomeFeatCards(){
   const chores=data.chores||[];
   const pending=chores.filter(c=>!c.done).length;
   document.getElementById('chores-feat-sub').textContent=chores.length?`${pending} pending`:'Family tasks';
+  // today strip
+  const stripTasks=document.getElementById('strip-tasks');
+  const stripChores=document.getElementById('strip-chores');
+  const stripItems=document.getElementById('strip-items');
+  if(stripTasks)stripTasks.textContent=todayTasks.filter(t=>!t.done).length;
+  if(stripChores)stripChores.textContent=pending;
+  if(stripItems)stripItems.textContent=left;
+}
+function setHomeGreeting(){
+  const h=new Date().getHours();
+  const greet=h<12?'Good morning ☀️':h<18?'Good afternoon 🌤️':'Good evening 🌙';
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const d=new Date();
+  const dateEl=document.getElementById('home-date');
+  const greetEl=document.getElementById('home-greeting');
+  if(dateEl)dateEl.textContent=days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate();
+  if(greetEl)greetEl.textContent=greet;
 }
 
 // SYNC
@@ -868,7 +915,7 @@ function renderModalTasks(){
       <div class="t-chk ${t.done?'chkd':''}" onclick="toggleTask(${idx})"></div>
       <div class="t-body">
         <div class="m-task-name">${esc(t.name)}</div>
-        ${t.time?`<div class="m-task-time">⏰ ${fmt12(t.time)}</div>`:''}
+        ${t.time?`<div class="m-task-time">⏰ ${fmt12(t.time)}${t.reminder!=null?' 🔔':''}</div>`:''}
       </div>
       <button class="t-edit" onclick="startEditTask(${idx})">✏️</button>
       <button class="t-del" onclick="delTask(${idx})">×</button>
@@ -1386,6 +1433,7 @@ document.getElementById('modal-input').addEventListener('keydown',e=>{if(e.key==
 document.getElementById('todo-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTodo();});
 document.getElementById('chore-input').addEventListener('keydown',e=>{if(e.key==='Enter')addChore();});
 buildStoreGrid();
+setHomeGreeting();
 updateHomeFeatCards();
 // Handle notification deep-link: ?date=YYYY-MM-DD
 (()=>{try{const p=new URLSearchParams(location.search);const d=p.get('date');if(d&&/^\d{4}-\d{2}-\d{2}$/.test(d)){const[y,mo]=d.split('-').map(Number);calYear=y;calMonth=mo-1;openScreen('cal');setTimeout(()=>selectDay(d),300);}}catch(e){}})();
