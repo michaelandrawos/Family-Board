@@ -35,7 +35,7 @@
   --r:20px;
   --shadow:0 8px 32px rgba(0,0,0,0.5);
 }
-html{background:var(--dark);}
+html{background:var(--dark);touch-action:pan-x pan-y;}
 body{
   font-family:'Nunito',sans-serif;
   background:var(--dark);
@@ -44,6 +44,7 @@ body{
   max-width:430px;margin:0 auto;
   overflow-x:hidden;
   padding-top:env(safe-area-inset-top);
+  touch-action:pan-x pan-y;
 }
 
 /* ── SCREENS ── */
@@ -75,7 +76,7 @@ body{
 .home-hero{padding:calc(env(safe-area-inset-top)+1.5rem) 1.25rem .75rem;}
 .home-hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;}
 .home-date{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
-.home-greeting{font-size:14px;color:var(--text2);font-weight:600;margin-bottom:4px;}
+.home-greeting{font-size:15px;color:var(--text);font-weight:700;margin-top:6px;line-height:1.5;}
 .home-title{font-size:1.75rem;font-weight:900;color:var(--text);letter-spacing:-.02em;line-height:1.1;}
 .home-title span{color:var(--green);}
 .sync-row{display:flex;align-items:center;gap:8px;margin-top:10px;}
@@ -781,14 +782,16 @@ function updateHomeFeatCards(){
 }
 function setHomeGreeting(){
   const h=new Date().getHours();
-  const greet=h<12?'Good morning ☀️':h<18?'Good afternoon 🌤️':'Good evening 🌙';
+  const greet=h<12?'Good morning':'h<18?'Good afternoon':'Good evening';
+  const emoji=h<12?'☀️':h<18?'🌤️':'🌙';
+  const msgs=['Have a wonderful day! 💚','You\'ve got this, team! 💪','Together is better 🏡','Making memories 🌟','Another great day! ✨','Strength in togetherness 💫','Happy family, happy life 🌈'];
+  const d=new Date();
   const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const d=new Date();
   const dateEl=document.getElementById('home-date');
   const greetEl=document.getElementById('home-greeting');
   if(dateEl)dateEl.textContent=days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate();
-  if(greetEl)greetEl.textContent=greet;
+  if(greetEl)greetEl.innerHTML=`${greet}, Micha &amp; Marise! ${emoji}<br><span style="font-size:12px;opacity:.65;font-weight:600;">${msgs[d.getDay()]}</span>`;
 }
 
 // SYNC
@@ -1441,18 +1444,32 @@ function scheduleNotification(task){
   const title='Reminder: '+task.name;
   const body=(task.date===todayStr?'Today':'On '+task.date)+' at '+timeStr;
   const msg={type:'SCHEDULE',tag:id,title,body,fireTime,data:{date:task.date}};
-  // Always schedule main-thread timer (fires while app is open)
+  // Always schedule main-thread timer (fires while app is open/backgrounded)
   if(pendingTimers[id])clearTimeout(pendingTimers[id]);
   pendingTimers[id]=setTimeout(()=>{
     if(Notification.permission==='granted')new Notification(title,{body,tag:id});
     delete pendingTimers[id];
   },fireTime-Date.now());
-  // Also send to SW for background delivery (same tag = deduplicates if both fire)
-  if(swReg&&swReg.active){
-    swReg.active.postMessage(msg);
-  } else if('serviceWorker' in navigator){
+  // Also send to SW for background delivery (same tag deduplicates if both fire)
+  const ctrl=navigator.serviceWorker&&navigator.serviceWorker.controller;
+  if(ctrl){ctrl.postMessage(msg);}
+  else if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(r=>{swReg=r;if(r.active)r.active.postMessage(msg);}).catch(()=>{});
   }
+}
+function checkMissedReminders(){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const now=Date.now();
+  (data.tasks||[]).forEach(t=>{
+    if(!t.time||t.reminder==null)return;
+    const fire=new Date(t.date+'T'+t.time+':00').getTime()-(t.reminder*60000);
+    // Fire if missed in last 2 hours and not yet done
+    if(fire>now-7200000&&fire<=now&&!t.done){
+      const[hh,mm]=t.time.split(':').map(Number);
+      const ap=hh>=12?'PM':'AM';const h12=hh%12||12;
+      new Notification('Reminder: '+t.name,{body:'Today at '+h12+':'+(mm<10?'0'+mm:mm)+' '+ap,tag:t.id||t.name});
+    }
+  });
 }
 function cancelNotification(taskId){
   if(!taskId)return;
@@ -1478,12 +1495,12 @@ document.getElementById('chore-input').addEventListener('keydown',e=>{if(e.key==
 buildStoreGrid();
 setHomeGreeting();
 updateHomeFeatCards();
-// Prevent pinch-to-zoom and double-tap zoom (iOS ignores viewport user-scalable)
+// Fire missed reminders when app comes back to foreground
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkMissedReminders();});
+// Prevent pinch-to-zoom (CSS touch-action handles it; these catch iOS gesture API)
 document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
 document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
-let _lastTap=0;
-document.addEventListener('touchend',e=>{const now=Date.now();if(now-_lastTap<300)e.preventDefault();_lastTap=now;},{passive:false});
 // Handle notification deep-link: ?date=YYYY-MM-DD
 (()=>{try{const p=new URLSearchParams(location.search);const d=p.get('date');if(d&&/^\d{4}-\d{2}-\d{2}$/.test(d)){const[y,mo]=d.split('-').map(Number);calYear=y;calMonth=mo-1;openScreen('cal');setTimeout(()=>selectDay(d),300);}}catch(e){}})();
 </script>

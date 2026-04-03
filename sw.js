@@ -1,6 +1,10 @@
 // Family Board — Service Worker
 // Handles scheduled local notifications via postMessage
 
+// Take control immediately on install/activate
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+
 const pending = {};
 
 self.addEventListener('message', e => {
