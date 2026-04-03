@@ -1106,13 +1106,10 @@ function renderFixed(){
   if(!fixed.length){el.innerHTML=`<div style="text-align:center;padding:.75rem;color:var(--text2);font-size:13px;">No fixed items yet</div>`;return;}
   const totIn=fixed.filter(f=>f.type==='income').reduce((a,f)=>a+f.amount,0);
   const totEx=fixed.filter(f=>f.type==='expense').reduce((a,f)=>a+f.amount,0);
-  const net=totIn-totEx;
   const summaryBar=`<div style="display:flex;gap:8px;margin-bottom:.75rem;padding:10px 12px;background:var(--dark2);border-radius:12px;border:1px solid var(--border);">
     <div style="flex:1;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Income</div><div style="font-size:15px;font-weight:800;color:var(--green);">+€${totIn.toFixed(2)}</div></div>
     <div style="width:1px;background:var(--border);"></div>
     <div style="flex:1;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Expenses</div><div style="font-size:15px;font-weight:800;color:var(--red);">-€${totEx.toFixed(2)}</div></div>
-    <div style="width:1px;background:var(--border);"></div>
-    <div style="flex:1;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Net</div><div style="font-size:15px;font-weight:800;color:${net>=0?'var(--green)':'var(--red)'};">${net>=0?'+':'-'}€${Math.abs(net).toFixed(2)}</div></div>
   </div>`;
   el.innerHTML=summaryBar+fixed.map((f,i)=>{
     const m=CAT_META[f.cat]||CAT_META.other;
