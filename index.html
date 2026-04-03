@@ -274,6 +274,14 @@ body{
 .todo-add-row input{flex:1;padding:11px 13px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
 .todo-add-row input:focus{border-color:var(--green);}
 .todo-add-btn{height:44px;padding:0 16px;border-radius:12px;border:none;background:var(--green);color:#0F1923;font-size:13px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;}
+/* CHORE BADGE */
+.chore-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--purple-bg);color:var(--purple);white-space:nowrap;}
+/* REMINDER ROW */
+.reminder-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.reminder-row label{font-size:12px;color:var(--text2);font-weight:600;white-space:nowrap;}
+.reminder-select{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
+/* NOTIF BANNER */
+.notif-banner{background:var(--amber-bg);border:1px solid rgba(245,166,35,0.3);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--amber);margin:.5rem 1.25rem 0;}
 
 /* ══════════════════════════════════════
    BUDGET SCREEN
@@ -407,6 +415,13 @@ input[type=number]{-moz-appearance:textfield;}
       </div>
       <div class="feat-icon-wrap" style="background:var(--amber-bg);">💰</div>
     </div>
+    <div class="feat-card" onclick="openScreen('chores')" style="background:linear-gradient(135deg,#1A2535,#1E2E42);">
+      <div class="feat-card-top">
+        <div class="feat-title">Chores</div>
+        <div class="feat-sub" id="chores-feat-sub">Family tasks</div>
+      </div>
+      <div class="feat-icon-wrap" style="background:var(--purple-bg);">🧹</div>
+    </div>
 
   </div>
 </div>
@@ -446,6 +461,7 @@ input[type=number]{-moz-appearance:textfield;}
     <div class="topbar-title">📅 Calendar</div>
     <button class="topbar-action" onclick="printMonth()" title="Print">🖨️</button>
   </div>
+  <div id="notif-banner" class="notif-banner" style="display:none;">🔔 Notifications blocked. Enable them in device Settings → Family Board.</div>
   <div class="scroll-content">
     <div class="cal-card">
       <div class="cal-hdr">
@@ -584,6 +600,7 @@ input[type=number]{-moz-appearance:textfield;}
           <div class="edit-panel-title">Edit task</div>
           <div class="edit-row"><input type="text" id="edit-name-input" placeholder="Task name"/></div>
           <div class="edit-time-row"><label>Time</label><input type="time" id="edit-time-input"/></div>
+          <div id="edit-reminder-row" style="display:none;"><div class="reminder-row"><label>Reminder</label><select id="edit-reminder" class="reminder-select"><option value="">No reminder</option><option value="0">At time</option><option value="15">15 min before</option><option value="30">30 min before</option><option value="60">1 hour before</option></select></div></div>
           <div class="edit-btns">
             <button class="edit-cancel" onclick="cancelEdit()">Cancel</button>
             <button class="edit-save" onclick="saveEdit()">Save</button>
@@ -610,9 +627,28 @@ input[type=number]{-moz-appearance:textfield;}
           </div>
           <div class="drum-highlight"></div>
         </div>
+        <div id="modal-reminder-row" style="display:none;"><div class="reminder-row"><label>Reminder</label><select id="modal-reminder" class="reminder-select"><option value="">No reminder</option><option value="0">At time</option><option value="15" selected>15 min before</option><option value="30">30 min before</option><option value="60">1 hour before</option></select></div></div>
         <button class="primary-btn" onclick="addDayTask()">Add task ＋</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ══ CHORES SCREEN ══ -->
+<div class="screen" id="screen-chores">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">‹</button>
+    <div class="topbar-title">🧹 Chores</div>
+    <div style="width:36px;"></div>
+  </div>
+  <div class="scroll-content">
+    <div id="chore-assignees-row" class="store-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:.75rem;"></div>
+    <div class="add-row" style="margin-bottom:.75rem;">
+      <input type="text" id="chore-input" placeholder="Add a chore…"/>
+      <button class="primary-btn" onclick="addChore()">Add ＋</button>
+    </div>
+    <div class="filter-row" id="chore-filter-row"></div>
+    <div class="items-list" id="chore-list"></div>
   </div>
 </div>
 
@@ -648,13 +684,13 @@ let selectedDate=null,editingIdx=-1,drumState={h:0,m:0,ap:0};
 let apiKey='',binId='';
 let data={items:[],tasks:[],todos:[],transactions:[],fixed:[]};
 let lastSync=null,pollTimer=null,saving=false;
+let swReg=null,swRegistered=false,notifInitDone=false;
 
 try{
   const d=JSON.parse(localStorage.getItem('fb_v4')||'{}');
   apiKey=d.apiKey||'';binId=d.binId||'';
   data=d.data||{items:[],tasks:[],todos:[],transactions:[],budgetLimit:0};
-  ['items','tasks','todos','transactions','fixed'].forEach(k=>{if(!data[k])data[k]=[];});
-  if(!data.fixed)data.fixed=[];
+  ['items','tasks','todos','transactions','fixed','chores'].forEach(k=>{if(!data[k])data[k]=[];});
 }catch(e){}
 
 if(apiKey&&binId){
@@ -682,6 +718,7 @@ function openScreen(name){
   if(name==='cal')renderCal();
   if(name==='budget')renderBudget();
   if(name==='shop'){buildStoreGrid();renderShop();}
+  if(name==='chores'){buildChoreAssignees();buildChoreFilter();renderChores();}
 }
 function goHome(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -699,6 +736,9 @@ function updateHomeFeatCards(){
   const txs=data.transactions||[];
   const expenses=txs.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
   document.getElementById('budget-feat-sub').textContent=expenses>0?`€${expenses.toFixed(0)} spent`:'Track expenses';
+  const chores=data.chores||[];
+  const pending=chores.filter(c=>!c.done).length;
+  document.getElementById('chores-feat-sub').textContent=chores.length?`${pending} pending`:'Family tasks';
 }
 
 // SYNC
@@ -716,9 +756,9 @@ async function createBin(){
 }
 function disconnect(){if(!confirm('Disconnect?'))return;apiKey='';binId='';data={items:[],tasks:[],todos:[],transactions:[],fixed:[]};localStorage.removeItem('fb_v4');if(pollTimer)clearInterval(pollTimer);setStatus('','Not connected');document.getElementById('api-key-input').value='';document.getElementById('bin-id-input').value='';document.getElementById('setup-card').style.display='block';document.getElementById('disconnect-btn').style.display='none';updateHomeFeatCards();}
 function startSync(){fetchRemote();if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(fetchRemote,8000);}
-async function fetchRemote(){if(!apiKey||!binId||saving)return;try{const r=await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{headers:{'X-Master-Key':apiKey}});const d=await r.json();if(d.record){data=d.record;['items','tasks','todos','transactions','fixed'].forEach(k=>{if(!data[k])data[k]=[];});if(!data.fixed)data.fixed=[];saveLocal();lastSync=new Date();setStatus('ok','Synced');updateHomeFeatCards();renderCurrentScreen();}}catch(e){setStatus('err','Sync error');}}
+async function fetchRemote(){if(!apiKey||!binId||saving)return;try{const r=await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{headers:{'X-Master-Key':apiKey}});const d=await r.json();if(d.record){data=d.record;['items','tasks','todos','transactions','fixed','chores'].forEach(k=>{if(!data[k])data[k]=[];});saveLocal();lastSync=new Date();setStatus('ok','Synced');updateHomeFeatCards();renderCurrentScreen();}}catch(e){setStatus('err','Sync error');}}
 async function push(){if(!apiKey||!binId)return;saving=true;setStatus('loading','Saving…');try{await fetch(`https://api.jsonbin.io/v3/b/${binId}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':apiKey},body:JSON.stringify(data)});lastSync=new Date();setStatus('ok','Saved');saveLocal();}catch(e){setStatus('err','Save failed');}saving=false;}
-function renderCurrentScreen(){const active=document.querySelector('.screen.active');if(!active)return;const id=active.id;if(id==='screen-shop')renderShop();else if(id==='screen-cal')renderCal();else if(id==='screen-budget'){renderFixed();renderBudget();}}
+function renderCurrentScreen(){const active=document.querySelector('.screen.active');if(!active)return;const id=active.id;if(id==='screen-shop')renderShop();else if(id==='screen-cal')renderCal();else if(id==='screen-budget'){renderFixed();renderBudget();}else if(id==='screen-chores')renderChores();}
 
 // STORES
 function buildStoreGrid(){
@@ -780,6 +820,7 @@ function delItem(i){data.items.splice(i,1);renderShop();push();}
 
 // CALENDAR
 function renderCal(){
+  if(!notifInitDone){notifInitDone=true;registerSW();requestNotifPermission();}
   document.getElementById('cal-month-label').textContent=MONTHS[calMonth]+' '+calYear;
   const first=new Date(calYear,calMonth,1),startDow=first.getDay();
   const dim=new Date(calYear,calMonth+1,0).getDate();
@@ -835,16 +876,40 @@ function renderModalTasks(){
   }).join('');
 }
 function toggleTask(i){data.tasks[i].done=!data.tasks[i].done;renderModalTasks();renderCal();push();}
-function delTask(i){data.tasks.splice(i,1);renderModalTasks();renderCal();push();}
-function startEditTask(i){editingIdx=i;const t=data.tasks[i];document.getElementById('edit-name-input').value=t.name;document.getElementById('edit-time-input').value=t.time||'';document.getElementById('edit-panel').style.display='block';document.getElementById('edit-name-input').focus();}
+function delTask(i){const t=data.tasks[i];if(t)cancelNotification(t.id);data.tasks.splice(i,1);renderModalTasks();renderCal();push();}
+function startEditTask(i){
+  editingIdx=i;const t=data.tasks[i];
+  document.getElementById('edit-name-input').value=t.name;
+  document.getElementById('edit-time-input').value=t.time||'';
+  const rr=document.getElementById('edit-reminder-row'),rs=document.getElementById('edit-reminder');
+  if(t.time){rr.style.display='block';rs.value=t.reminder!=null?String(t.reminder):'15';}else{rr.style.display='none';}
+  document.getElementById('edit-panel').style.display='block';document.getElementById('edit-name-input').focus();
+}
 function cancelEdit(){editingIdx=-1;document.getElementById('edit-panel').style.display='none';}
-function saveEdit(){if(editingIdx<0)return;const name=document.getElementById('edit-name-input').value.trim();if(!name)return;data.tasks[editingIdx].name=name;data.tasks[editingIdx].time=document.getElementById('edit-time-input').value||'';editingIdx=-1;document.getElementById('edit-panel').style.display='none';renderModalTasks();renderCal();push();}
+function saveEdit(){
+  if(editingIdx<0)return;const name=document.getElementById('edit-name-input').value.trim();if(!name)return;
+  const t=data.tasks[editingIdx];
+  cancelNotification(t.id);
+  t.name=name;t.time=document.getElementById('edit-time-input').value||'';
+  if(t.time){const rv=document.getElementById('edit-reminder').value;t.reminder=rv!==''?parseInt(rv):15;}else{t.reminder=null;}
+  if(!t.id)t.id=genId();
+  editingIdx=-1;document.getElementById('edit-panel').style.display='none';
+  renderModalTasks();renderCal();push();
+  if(t.time)scheduleNotification(t);
+}
 function addDayTask(){
   const input=document.getElementById('modal-input');const name=input.value.trim();if(!name||!selectedDate)return;
   const timeOn=document.getElementById('drum-picker-wrap').style.display!=='none';
   const time=timeOn?getDrumTime():'';
-  data.tasks.push({name,date:selectedDate,time,done:false});
-  input.value='';document.getElementById('drum-picker-wrap').style.display='none';document.getElementById('time-toggle-track').classList.remove('on');
+  const rv=timeOn?document.getElementById('modal-reminder').value:'';
+  const reminder=timeOn&&rv!==''?parseInt(rv):null;
+  const task={name,date:selectedDate,time,done:false,id:genId(),reminder};
+  data.tasks.push(task);
+  input.value='';
+  document.getElementById('drum-picker-wrap').style.display='none';
+  document.getElementById('modal-reminder-row').style.display='none';
+  document.getElementById('time-toggle-track').classList.remove('on');
+  if(time)scheduleNotification(task);
   showPreview();renderModalTasks();renderCal();push();
 }
 // TODOS
@@ -1174,7 +1239,14 @@ function setupDrag(col,inner,items,key){
 }
 function initDrums(){const now=new Date();let h=now.getHours();const ap=h>=12?1:0;h=h%12;drumState.h=HOURS.indexOf(h===0?12:h);drumState.m=Math.min(11,Math.round(now.getMinutes()/5));drumState.ap=ap;buildDrum('drum-hour',HOURS,'h');buildDrum('drum-min',MINS,'m');buildDrum('drum-ampm',AMPM,'ap');}
 function getDrumTime(){let h=HOURS[drumState.h];const m=MINS[drumState.m],ap=AMPM[drumState.ap];if(ap==='PM'&&h!==12)h+=12;if(ap==='AM'&&h===12)h=0;return pad(h)+':'+m;}
-function toggleTimePicker(){const wrap=document.getElementById('drum-picker-wrap'),track=document.getElementById('time-toggle-track');const isOn=wrap.style.display!=='none';wrap.style.display=isOn?'none':'block';track.classList.toggle('on',!isOn);if(!isOn)initDrums();}
+function toggleTimePicker(){
+  const wrap=document.getElementById('drum-picker-wrap'),track=document.getElementById('time-toggle-track');
+  const isOn=wrap.style.display!=='none';
+  wrap.style.display=isOn?'none':'block';
+  track.classList.toggle('on',!isOn);
+  if(!isOn){initDrums();document.getElementById('modal-reminder-row').style.display='block';document.getElementById('modal-reminder').value='15';}
+  else{document.getElementById('modal-reminder-row').style.display='none';}
+}
 
 // PRINT
 function printMonth(){
@@ -1233,14 +1305,139 @@ td.tc .dn{background:#3ECF7A;color:#0F1923;}
   w.document.close();w.focus();setTimeout(()=>w.print(),800);
 }
 
+// CHORES
+const CHORE_ASSIGNEES=['Me','Marise','Unassigned'];
+let selChoreAssignee='',choreFilter='all';
+function buildChoreAssignees(){
+  document.getElementById('chore-assignees-row').innerHTML=CHORE_ASSIGNEES.map(a=>`
+    <button class="store-btn ${selChoreAssignee===a?'sel':''}" onclick="setChoreAssignee('${a}')">
+      <span class="si">${a==='Me'?'👤':a==='Marise'?'👩':'❓'}</span>
+      <span class="sn">${a}</span>
+    </button>`).join('');
+}
+function setChoreAssignee(a){selChoreAssignee=selChoreAssignee===a?'':a;buildChoreAssignees();}
+function buildChoreFilter(){
+  const opts=[['all','All'],['pending','Pending'],['done','Done']];
+  document.getElementById('chore-filter-row').innerHTML=opts.map(([v,l])=>`<button class="filter-chip ${choreFilter===v?'af':''}" onclick="setChoreFilter('${v}')">${l}</button>`).join('');
+}
+function setChoreFilter(f){choreFilter=f;buildChoreFilter();renderChores();}
+function renderChores(){
+  buildChoreFilter();
+  const chores=data.chores||[];
+  let list=chores;
+  if(selChoreAssignee)list=list.filter(c=>c.assignee===selChoreAssignee);
+  if(choreFilter==='pending')list=list.filter(c=>!c.done);
+  else if(choreFilter==='done')list=list.filter(c=>c.done);
+  const el=document.getElementById('chore-list');
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-art">🧹</div><div class="empty-t">No chores${selChoreAssignee?' for '+selChoreAssignee:''}</div><div class="empty-s">${choreFilter==='done'?'Nothing done yet':'All caught up!'}</div></div>`;updateHomeFeatCards();return;}
+  el.innerHTML=list.map(c=>{
+    const i=chores.indexOf(c);
+    return`<div class="shop-item ${c.done?'done':''}">
+      <div class="chk ${c.done?'chkd':''}" onclick="toggleChore(${i})"></div>
+      <div class="si-body">
+        <div class="si-name">${esc(c.name)}</div>
+        <div class="si-meta"><span class="chore-badge">${esc(c.assignee)}</span></div>
+      </div>
+      <button class="si-del" onclick="delChore(${i})">×</button>
+    </div>`;
+  }).join('');
+  updateHomeFeatCards();
+}
+function addChore(){
+  const input=document.getElementById('chore-input');const name=input.value.trim();if(!name)return;
+  const assignee=selChoreAssignee||'Unassigned';
+  const id=genId();
+  data.chores.push({id,name,assignee,done:false});
+  input.value='';renderChores();push();
+}
+function toggleChore(i){data.chores[i].done=!data.chores[i].done;renderChores();push();}
+function delChore(i){data.chores.splice(i,1);renderChores();push();}
+
+// NOTIFICATIONS
+const SW_CODE=`
+self.addEventListener('message',function(e){
+  var d=e.data;
+  if(d&&d.type==='SCHEDULE'){
+    var delay=d.fireTime-Date.now();
+    if(delay<0)return;
+    setTimeout(function(){
+      self.registration.showNotification(d.title,{body:d.body,tag:d.tag,requireInteraction:false,data:d.data||{}});
+    },delay);
+  }
+  if(d&&d.type==='CANCEL'){
+    self.registration.getNotifications({tag:d.tag}).then(function(ns){ns.forEach(function(n){n.close();});});
+  }
+});
+self.addEventListener('notificationclick',function(e){
+  e.notification.close();
+  var date=(e.notification.data&&e.notification.data.date)?e.notification.data.date:'';
+  var base=self.location.href.split('?')[0];
+  var url=date?base+'?date='+date:base;
+  e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(function(cs){
+    for(var i=0;i<cs.length;i++){if('focus' in cs[i])return cs[i].focus();}
+    if(clients.openWindow)return clients.openWindow(url);
+  }));
+});
+`;
+function registerSW(){
+  if(swRegistered||!('serviceWorker' in navigator))return;
+  swRegistered=true;
+  try{
+    const blob=new Blob([SW_CODE],{type:'application/javascript'});
+    const blobUrl=URL.createObjectURL(blob);
+    navigator.serviceWorker.register(blobUrl).then(r=>{
+      swReg=r;
+      // Wait for SW to become active
+      const activate=()=>{if(r.active){scheduleAllReminders();}else{r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='activated'){swReg=r;scheduleAllReminders();}});});}};
+      activate();
+    }).catch(()=>{});
+  }catch(e){}
+}
+function requestNotifPermission(){
+  if(!('Notification' in window))return;
+  if(localStorage.getItem('fb_notif_asked')){renderPermBanner();return;}
+  localStorage.setItem('fb_notif_asked','1');
+  if(Notification.permission==='granted'){renderPermBanner();return;}
+  if(Notification.permission==='denied'){renderPermBanner();return;}
+  Notification.requestPermission().then(()=>renderPermBanner());
+}
+function renderPermBanner(){
+  const el=document.getElementById('notif-banner');if(!el)return;
+  el.style.display=('Notification' in window&&Notification.permission==='denied')?'flex':'none';
+}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function scheduleNotification(task){
+  if(!swReg||!task.time||task.reminder===null||task.reminder===undefined)return;
+  const id=task.id||(task.id=genId());
+  const[hh,mm]=task.time.split(':').map(Number);
+  const fire=task.date?new Date(task.date+'T'+task.time+':00'):new Date();
+  if(task.date){/* date already applied via ISO string */}else{fire.setHours(hh,mm,0,0);}
+  const fireTime=fire.getTime()-(task.reminder*60000);
+  if(fireTime<=Date.now())return;
+  const ap=hh>=12?'PM':'AM';const h12=hh%12||12;const timeStr=h12+':'+(mm<10?'0'+mm:mm)+' '+ap;
+  const body=(task.date===todayStr?'Today':'On '+task.date)+' at '+timeStr;
+  const send=()=>swReg.active&&swReg.active.postMessage({type:'SCHEDULE',tag:id,title:'Reminder: '+task.name,body,fireTime,data:{date:task.date}});
+  swReg.active?send():navigator.serviceWorker.ready.then(()=>{swReg=navigator.serviceWorker.controller?{active:navigator.serviceWorker.controller}:swReg;send();});
+}
+function cancelNotification(taskId){
+  if(!swReg||!swReg.active||!taskId)return;
+  swReg.active.postMessage({type:'CANCEL',tag:taskId});
+}
+function scheduleAllReminders(){
+  (data.tasks||[]).forEach(t=>{if(t.time&&t.reminder!=null)scheduleNotification(t);});
+}
+
 // INIT
 setTxType('expense');
 document.getElementById('tx-date').value=fmtDate(new Date());
 document.getElementById('item-input').addEventListener('keydown',e=>{if(e.key==='Enter')addItem();});
 document.getElementById('modal-input').addEventListener('keydown',e=>{if(e.key==='Enter')addDayTask();});
 document.getElementById('todo-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTodo();});
+document.getElementById('chore-input').addEventListener('keydown',e=>{if(e.key==='Enter')addChore();});
 buildStoreGrid();
 updateHomeFeatCards();
+// Handle notification deep-link: ?date=YYYY-MM-DD
+(()=>{try{const p=new URLSearchParams(location.search);const d=p.get('date');if(d&&/^\d{4}-\d{2}-\d{2}$/.test(d)){const[y,mo]=d.split('-').map(Number);calYear=y;calMonth=mo-1;openScreen('cal');setTimeout(()=>selectDay(d),300);}}catch(e){}})();
 </script>
 </body>
 </html>
