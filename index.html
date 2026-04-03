@@ -683,7 +683,7 @@ input[type=number]{-moz-appearance:textfield;}
 </div>
 
 <!-- ══ QUICK CAPTURE FAB ══ -->
-<button class="qc-fab" id="qc-fab" onclick="openQC()">＋</button>
+<button class="qc-fab" id="qc-fab">＋</button>
 
 <!-- ══ QUICK CAPTURE SHEET ══ -->
 <div class="qc-overlay" id="qc-overlay" onclick="qcOverlayClick(event)">
@@ -974,7 +974,9 @@ function renderShop(){
   document.getElementById('shop-stats').innerHTML=total?`
     <div class="stat-card" style="background:var(--green-bg);"><div class="stat-n" style="color:var(--green);">${total}</div><div class="stat-l">Total</div></div>
     <div class="stat-card" style="background:var(--amber-bg);"><div class="stat-n" style="color:var(--amber);">${total-done}</div><div class="stat-l">Left</div></div>
-    <div class="stat-card" style="background:var(--blue-bg);"><div class="stat-n" style="color:var(--blue);">${done}</div><div class="stat-l">Done</div></div>`:'';
+    <div class="stat-card" style="background:var(--blue-bg);"><div class="stat-n" style="color:var(--blue);">${done}</div><div class="stat-l">Done</div></div>
+    ${done?`<button onclick="clearDoneItems()" style="height:44px;padding:0 13px;border-radius:14px;border:none;background:var(--red-bg);color:var(--red);font-size:12px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0;">🗑️ Clear</button>`:''}
+  `:'';
   updateHomeFeatCards();
 }
 function addItem(){
@@ -986,6 +988,7 @@ function addItem(){
 }
 function toggleItem(i){data.items[i].done=!data.items[i].done;renderShop();push();}
 function delItem(i){data.items.splice(i,1);renderShop();push();}
+function clearDoneItems(){data.items=data.items.filter(x=>!x.done);renderShop();push();}
 
 // RECURRING HELPER
 function taskOccursOn(task,dateStr){
@@ -1431,6 +1434,43 @@ function openSummaryModal(type){
 
 // QUICK CAPTURE
 let qcTxType='expense';
+let _fabPos=JSON.parse(localStorage.getItem('fb_fab_pos')||'null');
+function initFab(){
+  const fab=document.getElementById('qc-fab');if(!fab)return;
+  // Restore saved position
+  if(_fabPos){
+    const cl=Math.max(4,Math.min(window.innerWidth-60,_fabPos.left));
+    const ct=Math.max(4,Math.min(window.innerHeight-60,_fabPos.top));
+    fab.style.bottom='';fab.style.right='';fab.style.left=cl+'px';fab.style.top=ct+'px';
+  }
+  let sx=0,sy=0,sl=0,st=0,moved=false,down=false;
+  function start(x,y){
+    const r=fab.getBoundingClientRect();
+    sx=x;sy=y;sl=r.left;st=r.top;moved=false;down=true;
+    fab.style.transition='none';fab.style.bottom='';fab.style.right='';
+    fab.style.left=sl+'px';fab.style.top=st+'px';
+  }
+  function move(x,y){
+    if(!down)return;
+    const dx=x-sx,dy=y-sy;
+    if(!moved&&Math.abs(dx)<5&&Math.abs(dy)<5)return;
+    moved=true;
+    fab.style.left=Math.max(4,Math.min(window.innerWidth-60,sl+dx))+'px';
+    fab.style.top=Math.max(4,Math.min(window.innerHeight-60,st+dy))+'px';
+  }
+  function end(){
+    if(!down)return;down=false;
+    fab.style.transition='';
+    if(moved){_fabPos={left:parseInt(fab.style.left),top:parseInt(fab.style.top)};localStorage.setItem('fb_fab_pos',JSON.stringify(_fabPos));}
+    else openQC();
+  }
+  fab.addEventListener('touchstart',e=>{e.preventDefault();start(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+  fab.addEventListener('touchmove',e=>{e.preventDefault();move(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+  fab.addEventListener('touchend',end,{passive:false});
+  fab.addEventListener('mousedown',e=>{e.preventDefault();start(e.clientX,e.clientY);});
+  window.addEventListener('mousemove',e=>{move(e.clientX,e.clientY);});
+  window.addEventListener('mouseup',end);
+}
 function openQC(){
   document.getElementById('qc-overlay').classList.add('open');
   document.getElementById('qc-cal-date').value=fmtDate(new Date());
@@ -1801,6 +1841,7 @@ document.getElementById('todo-input').addEventListener('keydown',e=>{if(e.key===
 buildStoreGrid();
 setHomeGreeting();
 updateHomeFeatCards();
+initFab();
 // Fire missed reminders when app comes back to foreground
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkMissedReminders();});
 // Prevent pinch-to-zoom (CSS touch-action handles it; these catch iOS gesture API)
