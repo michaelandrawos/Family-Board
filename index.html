@@ -274,6 +274,8 @@ body{
 .todo-add-row input{flex:1;padding:11px 13px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
 .todo-add-row input:focus{border-color:var(--green);}
 .todo-add-btn{height:44px;padding:0 16px;border-radius:12px;border:none;background:var(--green);color:#0F1923;font-size:13px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;}
+/* CHORE BADGE */
+.chore-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--purple-bg);color:var(--purple);white-space:nowrap;}
 /* REMINDER ROW */
 .reminder-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .reminder-row label{font-size:12px;color:var(--text2);font-weight:600;white-space:nowrap;}
@@ -412,6 +414,13 @@ input[type=number]{-moz-appearance:textfield;}
         <div class="feat-sub" id="budget-feat-sub">Track expenses</div>
       </div>
       <div class="feat-icon-wrap" style="background:var(--amber-bg);">💰</div>
+    </div>
+    <div class="feat-card" onclick="openScreen('chores')" style="background:linear-gradient(135deg,#1A2535,#1E2E42);">
+      <div class="feat-card-top">
+        <div class="feat-title">Chores</div>
+        <div class="feat-sub" id="chores-feat-sub">Family tasks</div>
+      </div>
+      <div class="feat-icon-wrap" style="background:var(--purple-bg);">🧹</div>
     </div>
 
   </div>
@@ -625,6 +634,24 @@ input[type=number]{-moz-appearance:textfield;}
   </div>
 </div>
 
+<!-- ══ CHORES SCREEN ══ -->
+<div class="screen" id="screen-chores">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">‹</button>
+    <div class="topbar-title">🧹 Chores</div>
+    <div style="width:36px;"></div>
+  </div>
+  <div class="scroll-content">
+    <div id="chore-assignees-row" class="store-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:.75rem;"></div>
+    <div class="add-row" style="margin-bottom:.75rem;">
+      <input type="text" id="chore-input" placeholder="Add a chore…"/>
+      <button class="primary-btn" onclick="addChore()">Add ＋</button>
+    </div>
+    <div class="filter-row" id="chore-filter-row"></div>
+    <div class="items-list" id="chore-list"></div>
+  </div>
+</div>
+
 <script>
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const STORES=[
@@ -663,8 +690,7 @@ try{
   const d=JSON.parse(localStorage.getItem('fb_v4')||'{}');
   apiKey=d.apiKey||'';binId=d.binId||'';
   data=d.data||{items:[],tasks:[],todos:[],transactions:[],budgetLimit:0};
-  ['items','tasks','todos','transactions','fixed'].forEach(k=>{if(!data[k])data[k]=[];});
-  if(!data.fixed)data.fixed=[];
+  ['items','tasks','todos','transactions','fixed','chores'].forEach(k=>{if(!data[k])data[k]=[];});
 }catch(e){}
 
 if(apiKey&&binId){
@@ -692,6 +718,7 @@ function openScreen(name){
   if(name==='cal')renderCal();
   if(name==='budget')renderBudget();
   if(name==='shop'){buildStoreGrid();renderShop();}
+  if(name==='chores'){buildChoreAssignees();buildChoreFilter();renderChores();}
 }
 function goHome(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -709,6 +736,9 @@ function updateHomeFeatCards(){
   const txs=data.transactions||[];
   const expenses=txs.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
   document.getElementById('budget-feat-sub').textContent=expenses>0?`€${expenses.toFixed(0)} spent`:'Track expenses';
+  const chores=data.chores||[];
+  const pending=chores.filter(c=>!c.done).length;
+  document.getElementById('chores-feat-sub').textContent=chores.length?`${pending} pending`:'Family tasks';
 }
 
 // SYNC
@@ -726,9 +756,9 @@ async function createBin(){
 }
 function disconnect(){if(!confirm('Disconnect?'))return;apiKey='';binId='';data={items:[],tasks:[],todos:[],transactions:[],fixed:[]};localStorage.removeItem('fb_v4');if(pollTimer)clearInterval(pollTimer);setStatus('','Not connected');document.getElementById('api-key-input').value='';document.getElementById('bin-id-input').value='';document.getElementById('setup-card').style.display='block';document.getElementById('disconnect-btn').style.display='none';updateHomeFeatCards();}
 function startSync(){fetchRemote();if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(fetchRemote,8000);}
-async function fetchRemote(){if(!apiKey||!binId||saving)return;try{const r=await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{headers:{'X-Master-Key':apiKey}});const d=await r.json();if(d.record){data=d.record;['items','tasks','todos','transactions','fixed'].forEach(k=>{if(!data[k])data[k]=[];});if(!data.fixed)data.fixed=[];saveLocal();lastSync=new Date();setStatus('ok','Synced');updateHomeFeatCards();renderCurrentScreen();}}catch(e){setStatus('err','Sync error');}}
+async function fetchRemote(){if(!apiKey||!binId||saving)return;try{const r=await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{headers:{'X-Master-Key':apiKey}});const d=await r.json();if(d.record){data=d.record;['items','tasks','todos','transactions','fixed','chores'].forEach(k=>{if(!data[k])data[k]=[];});saveLocal();lastSync=new Date();setStatus('ok','Synced');updateHomeFeatCards();renderCurrentScreen();}}catch(e){setStatus('err','Sync error');}}
 async function push(){if(!apiKey||!binId)return;saving=true;setStatus('loading','Saving…');try{await fetch(`https://api.jsonbin.io/v3/b/${binId}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':apiKey},body:JSON.stringify(data)});lastSync=new Date();setStatus('ok','Saved');saveLocal();}catch(e){setStatus('err','Save failed');}saving=false;}
-function renderCurrentScreen(){const active=document.querySelector('.screen.active');if(!active)return;const id=active.id;if(id==='screen-shop')renderShop();else if(id==='screen-cal')renderCal();else if(id==='screen-budget'){renderFixed();renderBudget();}}
+function renderCurrentScreen(){const active=document.querySelector('.screen.active');if(!active)return;const id=active.id;if(id==='screen-shop')renderShop();else if(id==='screen-cal')renderCal();else if(id==='screen-budget'){renderFixed();renderBudget();}else if(id==='screen-chores')renderChores();}
 
 // STORES
 function buildStoreGrid(){
@@ -1226,6 +1256,54 @@ td.tc .dn{background:#3ECF7A;color:#0F1923;}
   w.document.close();w.focus();setTimeout(()=>w.print(),800);
 }
 
+// CHORES
+const CHORE_ASSIGNEES=['Me','Marise','Unassigned'];
+let selChoreAssignee='',choreFilter='all';
+function buildChoreAssignees(){
+  document.getElementById('chore-assignees-row').innerHTML=CHORE_ASSIGNEES.map(a=>`
+    <button class="store-btn ${selChoreAssignee===a?'sel':''}" onclick="setChoreAssignee('${a}')">
+      <span class="si">${a==='Me'?'👤':a==='Marise'?'👩':'❓'}</span>
+      <span class="sn">${a}</span>
+    </button>`).join('');
+}
+function setChoreAssignee(a){selChoreAssignee=selChoreAssignee===a?'':a;buildChoreAssignees();}
+function buildChoreFilter(){
+  const opts=[['all','All'],['pending','Pending'],['done','Done']];
+  document.getElementById('chore-filter-row').innerHTML=opts.map(([v,l])=>`<button class="filter-chip ${choreFilter===v?'af':''}" onclick="setChoreFilter('${v}')">${l}</button>`).join('');
+}
+function setChoreFilter(f){choreFilter=f;buildChoreFilter();renderChores();}
+function renderChores(){
+  buildChoreFilter();
+  const chores=data.chores||[];
+  let list=chores;
+  if(selChoreAssignee)list=list.filter(c=>c.assignee===selChoreAssignee);
+  if(choreFilter==='pending')list=list.filter(c=>!c.done);
+  else if(choreFilter==='done')list=list.filter(c=>c.done);
+  const el=document.getElementById('chore-list');
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-art">🧹</div><div class="empty-t">No chores${selChoreAssignee?' for '+selChoreAssignee:''}</div><div class="empty-s">${choreFilter==='done'?'Nothing done yet':'All caught up!'}</div></div>`;updateHomeFeatCards();return;}
+  el.innerHTML=list.map(c=>{
+    const i=chores.indexOf(c);
+    return`<div class="shop-item ${c.done?'done':''}">
+      <div class="chk ${c.done?'chkd':''}" onclick="toggleChore(${i})"></div>
+      <div class="si-body">
+        <div class="si-name">${esc(c.name)}</div>
+        <div class="si-meta"><span class="chore-badge">${esc(c.assignee)}</span></div>
+      </div>
+      <button class="si-del" onclick="delChore(${i})">×</button>
+    </div>`;
+  }).join('');
+  updateHomeFeatCards();
+}
+function addChore(){
+  const input=document.getElementById('chore-input');const name=input.value.trim();if(!name)return;
+  const assignee=selChoreAssignee||'Unassigned';
+  const id=genId();
+  data.chores.push({id,name,assignee,done:false});
+  input.value='';renderChores();push();
+}
+function toggleChore(i){data.chores[i].done=!data.chores[i].done;renderChores();push();}
+function delChore(i){data.chores.splice(i,1);renderChores();push();}
+
 // NOTIFICATIONS
 const SW_CODE=`
 self.addEventListener('message',function(e){
@@ -1306,6 +1384,7 @@ document.getElementById('tx-date').value=fmtDate(new Date());
 document.getElementById('item-input').addEventListener('keydown',e=>{if(e.key==='Enter')addItem();});
 document.getElementById('modal-input').addEventListener('keydown',e=>{if(e.key==='Enter')addDayTask();});
 document.getElementById('todo-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTodo();});
+document.getElementById('chore-input').addEventListener('keydown',e=>{if(e.key==='Enter')addChore();});
 buildStoreGrid();
 updateHomeFeatCards();
 // Handle notification deep-link: ?date=YYYY-MM-DD
