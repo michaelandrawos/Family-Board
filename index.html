@@ -34,6 +34,7 @@
   --pink-bg:rgba(244,114,182,0.1);
   --r:20px;
   --shadow:0 8px 32px rgba(0,0,0,0.5);
+  --topbar-bg:rgba(45,10,107,0.92);
 }
 html{background:var(--dark);touch-action:pan-x pan-y;}
 body{
@@ -56,7 +57,7 @@ body{
 .topbar{
   display:flex;align-items:center;justify-content:space-between;
   padding:calc(env(safe-area-inset-top)+52px) 1.25rem 14px;
-  background:rgba(45,10,107,0.92);
+  background:var(--topbar-bg);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:50;
@@ -389,7 +390,8 @@ input[type=number]{-moz-appearance:textfield;}
         <div class="home-title">Family <span>Board</span></div>
         <div class="home-greeting" id="home-greeting"></div>
       </div>
-      <div style="margin-top:4px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-top:4px;">
+        <button class="topbar-action" onclick="openScreen('settings')" style="width:36px;height:36px;font-size:18px;">⚙️</button>
         <div class="sync-pill" onclick="toggleSetup()">
           <div class="dot" id="sync-dot"></div>
           <span id="sync-label">Not connected</span>
@@ -544,6 +546,22 @@ input[type=number]{-moz-appearance:textfield;}
       <button class="primary-btn" onclick="addTodo()">Add ＋</button>
     </div>
     <div id="todo-list"></div>
+  </div>
+</div>
+
+<!-- ══ SETTINGS SCREEN ══ -->
+<div class="screen" id="screen-settings">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">‹</button>
+    <div class="topbar-title">⚙️ Settings</div>
+    <div style="width:36px;"></div>
+  </div>
+  <div class="scroll-content">
+    <div style="margin-bottom:.5rem;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);">Appearance</div>
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="card-label" style="margin-bottom:.75rem;">Theme</div>
+      <div id="theme-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px;"></div>
+    </div>
   </div>
 </div>
 
@@ -761,6 +779,7 @@ function openScreen(name){
   if(name==='budget')renderBudget();
   if(name==='shop'){buildStoreGrid();renderShop();}
   if(name==='todos')renderTodos();
+  if(name==='settings')buildThemeGrid();
 }
 function goHome(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1394,6 +1413,38 @@ td.tc .dn{background:#3ECF7A;color:#0F1923;}
   w.document.close();w.focus();setTimeout(()=>w.print(),800);
 }
 
+
+// THEMES
+const THEMES={
+  dark:   {name:'Dark',       swatch:'#181B26', dark:'#0D0F14', dark2:'#13161E', card:'#181B26', card2:'#1F2232', border:'rgba(255,255,255,0.08)', text:'#F0F2FF',  text2:'rgba(240,242,255,0.52)', text3:'rgba(240,242,255,0.28)', topbar:'rgba(13,15,20,0.88)'},
+  royal:  {name:'Royal',      swatch:'#5B21B6', dark:'#2D0A6B', dark2:'#3D1080', card:'#4C1A9E', card2:'#5B21B6', border:'rgba(255,255,255,0.15)', text:'#FFFFFF',  text2:'#C4B5FD',               text3:'rgba(196,181,253,0.45)',  topbar:'rgba(45,10,107,0.92)'},
+  lilac:  {name:'Lilac',      swatch:'#C4B0F8', dark:'#E9D8FD', dark2:'#DDD0F8', card:'#F2ECFF', card2:'#EAE0FA', border:'rgba(109,40,217,0.15)', text:'#1E0A3C',  text2:'#6D28D9',               text3:'rgba(109,40,217,0.4)',    topbar:'rgba(233,216,253,0.92)'},
+  sky:    {name:'Sky Blue',   swatch:'#7DD3FC', dark:'#BAE6FD', dark2:'#A8DCFC', card:'#D6EFFD', card2:'#C8E8FC', border:'rgba(0,0,0,0.08)',       text:'#0C2340',  text2:'#0369A1',               text3:'rgba(3,105,161,0.4)',     topbar:'rgba(186,230,253,0.92)'},
+  peach:  {name:'Peach',      swatch:'#FFAD75', dark:'#FFCBA4', dark2:'#FFBC8E', card:'#FFE0C8', card2:'#FFD6B8', border:'rgba(0,0,0,0.08)',       text:'#2A1000',  text2:'#9A4A10',               text3:'rgba(154,74,16,0.4)',     topbar:'rgba(255,203,164,0.92)'},
+  rose:   {name:'Rose',       swatch:'#F77F90', dark:'#FBAFBC', dark2:'#F99CAC', card:'#FDD0D8', card2:'#FCC4CE', border:'rgba(0,0,0,0.08)',       text:'#260010',  text2:'#9A1030',               text3:'rgba(154,16,48,0.4)',     topbar:'rgba(251,175,188,0.92)'},
+  mint:   {name:'Mint',       swatch:'#6DD97A', dark:'#A3E8B0', dark2:'#90DDA0', card:'#C8F5D4', card2:'#BAEFC6', border:'rgba(0,0,0,0.08)',       text:'#052010',  text2:'#166534',               text3:'rgba(22,101,52,0.4)',     topbar:'rgba(163,232,176,0.92)'},
+  cream:  {name:'Cream',      swatch:'#E8D9C0', dark:'#F5F0E8', dark2:'#EDE5D8', card:'#FFFFFF', card2:'#FAF6F0', border:'rgba(0,0,0,0.07)',       text:'#1A1A2A',  text2:'#8A7E6E',               text3:'rgba(138,126,110,0.4)',   topbar:'rgba(245,240,232,0.92)'},
+};
+let currentTheme=localStorage.getItem('fb_theme')||'royal';
+function applyTheme(id){
+  const t=THEMES[id]||THEMES.royal;currentTheme=id;
+  const r=document.documentElement;
+  r.style.setProperty('--dark',t.dark);r.style.setProperty('--dark2',t.dark2);
+  r.style.setProperty('--card',t.card);r.style.setProperty('--card2',t.card2);
+  r.style.setProperty('--border',t.border);r.style.setProperty('--topbar-bg',t.topbar);
+  r.style.setProperty('--text',t.text);r.style.setProperty('--text2',t.text2);r.style.setProperty('--text3',t.text3);
+  localStorage.setItem('fb_theme',id);
+  buildThemeGrid();
+}
+function buildThemeGrid(){
+  const el=document.getElementById('theme-grid');if(!el)return;
+  el.innerHTML=Object.entries(THEMES).map(([id,t])=>`
+    <div onclick="applyTheme('${id}')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+      <div style="width:52px;height:52px;border-radius:50%;background:${t.swatch};border:3px solid ${currentTheme===id?'var(--green)':'transparent'};box-shadow:${currentTheme===id?'0 0 0 2px var(--green)':'none'};transition:all .2s;"></div>
+      <div style="font-size:10px;font-weight:700;color:${currentTheme===id?'var(--text)':'var(--text2)'};text-align:center;line-height:1.2;">${t.name}</div>
+    </div>`).join('');
+}
+applyTheme(currentTheme);
 
 // NOTIFICATIONS
 // NOTIFICATION ENGINE
