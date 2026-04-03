@@ -377,6 +377,21 @@ input[type=number]{-moz-appearance:textfield;}
 .fixed-del-btn:hover{color:var(--red);background:var(--red-bg);}
 .fixed-edit-panel{background:var(--dark);border-radius:14px;padding:1rem;margin-bottom:.75rem;border:1px solid rgba(62,207,122,0.3);}
 .fixed-edit-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:.6rem;}
+
+/* ── QUICK CAPTURE FAB ── */
+.qc-fab{position:fixed;bottom:calc(1.5rem + env(safe-area-inset-bottom));right:1.25rem;width:56px;height:56px;border-radius:50%;background:var(--green);border:none;font-size:28px;line-height:1;color:#0F1923;cursor:pointer;box-shadow:0 4px 20px rgba(74,222,128,0.4);z-index:200;display:flex;align-items:center;justify-content:center;transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
+.qc-fab:hover{transform:scale(1.1);}
+.qc-fab:active{transform:scale(.93);}
+.qc-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);}
+.qc-overlay.open{display:flex;}
+.qc-sheet{background:var(--card2);border-radius:24px 24px 0 0;padding:1rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));width:100%;max-width:430px;animation:slideUp .25s cubic-bezier(.34,1.2,.64,1);}
+.qc-tabs{display:flex;gap:6px;margin-bottom:1rem;}
+.qc-tab{flex:1;padding:8px 4px;border-radius:10px;border:1px solid var(--border);background:transparent;font-size:11px;font-weight:700;font-family:'Nunito',sans-serif;color:var(--text2);cursor:pointer;transition:all .15s;text-align:center;}
+.qc-tab.qc-active{background:var(--green-bg);border-color:rgba(62,207,122,0.4);color:var(--green);}
+.qc-panel{display:none;}
+.qc-panel.qc-active{display:block;}
+.qc-date-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
+.qc-text-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;background:var(--dark2);color:var(--text);outline:none;}
 </style>
 </head>
 <body>
@@ -667,6 +682,56 @@ input[type=number]{-moz-appearance:textfield;}
   </div>
 </div>
 
+<!-- ══ QUICK CAPTURE FAB ══ -->
+<button class="qc-fab" id="qc-fab" onclick="openQC()">＋</button>
+
+<!-- ══ QUICK CAPTURE SHEET ══ -->
+<div class="qc-overlay" id="qc-overlay" onclick="qcOverlayClick(event)">
+  <div class="qc-sheet">
+    <div class="modal-handle"></div>
+    <div class="qc-tabs">
+      <button class="qc-tab qc-active" id="qct-shop" onclick="switchQCTab('shop')">🛒 Shop</button>
+      <button class="qc-tab" id="qct-todo" onclick="switchQCTab('todo')">✅ To-do</button>
+      <button class="qc-tab" id="qct-cal" onclick="switchQCTab('cal')">📅 Cal</button>
+      <button class="qc-tab" id="qct-budget" onclick="switchQCTab('budget')">💰 Budget</button>
+    </div>
+    <!-- Shopping -->
+    <div class="qc-panel qc-active" id="qcp-shop">
+      <div class="add-row">
+        <input class="qc-text-input" type="text" id="qc-shop-input" placeholder="Add item…" onkeydown="if(event.key==='Enter')qcAddShop()"/>
+        <button class="primary-btn" onclick="qcAddShop()">Add ＋</button>
+      </div>
+    </div>
+    <!-- To-do -->
+    <div class="qc-panel" id="qcp-todo">
+      <div class="add-row">
+        <input class="qc-text-input" type="text" id="qc-todo-input" placeholder="Add task…" onkeydown="if(event.key==='Enter')qcAddTodo()"/>
+        <button class="primary-btn" onclick="qcAddTodo()">Add ＋</button>
+      </div>
+    </div>
+    <!-- Calendar -->
+    <div class="qc-panel" id="qcp-cal">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <input class="qc-text-input" type="text" id="qc-cal-input" placeholder="Task name…" onkeydown="if(event.key==='Enter')qcAddCal()"/>
+        <input class="qc-date-input" type="date" id="qc-cal-date"/>
+        <button class="primary-btn" style="width:100%;" onclick="qcAddCal()">Add ＋</button>
+      </div>
+    </div>
+    <!-- Budget -->
+    <div class="qc-panel" id="qcp-budget">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="tx-type-row">
+          <button class="tx-type-btn" id="qc-type-income" onclick="setQCTxType('income')">＋ Income</button>
+          <button class="tx-type-btn sel-expense" id="qc-type-expense" onclick="setQCTxType('expense')">− Expense</button>
+        </div>
+        <input class="qc-text-input" type="text" id="qc-budget-name" placeholder="Description…" onkeydown="if(event.key==='Enter')qcAddBudget()"/>
+        <input class="qc-text-input" type="number" id="qc-budget-amount" placeholder="Amount (€)" min="0" step="0.01" onkeydown="if(event.key==='Enter')qcAddBudget()"/>
+        <button class="primary-btn" style="width:100%;" onclick="qcAddBudget()">Add ＋</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- DAY MODAL -->
 <div class="overlay" id="day-overlay" onclick="overlayClick(event)">
   <div class="modal">
@@ -682,6 +747,7 @@ input[type=number]{-moz-appearance:textfield;}
           <div class="edit-row"><input type="text" id="edit-name-input" placeholder="Task name" data-i18n-ph="task_name_ph"/></div>
           <div class="edit-time-row"><label data-i18n="time_lbl">Time</label><input type="time" id="edit-time-input"/></div>
           <div id="edit-reminder-row" style="display:none;"><div class="reminder-row"><label data-i18n="reminder_lbl">Reminder</label><select id="edit-reminder" class="reminder-select"><option value="" data-i18n="no_reminder">No reminder</option><option value="0" data-i18n="at_time">At time</option><option value="15" data-i18n="min_15">15 min before</option><option value="30" data-i18n="min_30">30 min before</option><option value="60" data-i18n="hour_1">1 hour before</option><option value="1440" data-i18n="day_1">1 day before</option></select></div></div>
+          <div class="edit-time-row"><label>🔁 Repeat</label><select id="edit-repeat" class="reminder-select"><option value="">No repeat</option><option value="weekly">Every week</option><option value="monthly">Every month</option></select></div>
           <div class="edit-btns">
             <button class="edit-cancel" onclick="cancelEdit()" data-i18n="cancel_btn">Cancel</button>
             <button class="edit-save" onclick="saveEdit()" data-i18n="save_btn">Save</button>
@@ -709,6 +775,10 @@ input[type=number]{-moz-appearance:textfield;}
           <div class="drum-highlight"></div>
         </div>
         <div id="modal-reminder-row" style="display:none;"><div class="reminder-row"><label data-i18n="reminder_lbl">Reminder</label><select id="modal-reminder" class="reminder-select"><option value="" selected data-i18n="no_reminder">No reminder</option><option value="0" data-i18n="at_time">At time</option><option value="15" data-i18n="min_15">15 min before</option><option value="30" data-i18n="min_30">30 min before</option><option value="60" data-i18n="hour_1">1 hour before</option><option value="1440" data-i18n="day_1">1 day before</option></select></div></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <label style="font-size:12px;color:var(--text2);font-weight:600;white-space:nowrap;">🔁 Repeat</label>
+          <select id="modal-repeat" class="reminder-select"><option value="">No repeat</option><option value="weekly">Every week</option><option value="monthly">Every month</option></select>
+        </div>
         <button class="primary-btn" onclick="addDayTask()" data-i18n="add_task_btn">Add task ＋</button>
       </div>
     </div>
@@ -804,7 +874,7 @@ function updateHomeFeatCards(){
   const left=items.filter(x=>!x.done).length;
   document.getElementById('shop-feat-sub').textContent=items.length?t('sub_items_remaining')(left):t('feat_sub_shop');
   const tasks=data.tasks||[];
-  const todayTasks=tasks.filter(t=>t.date===todayStr);
+  const todayTasks=tasks.filter(tk=>taskOccursOn(tk,todayStr));
   document.getElementById('cal-feat-sub').textContent=todayTasks.length?t('sub_tasks_today')(todayTasks.length):t('feat_sub_cal');
   const txs=data.transactions||[];
   const expenses=txs.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
@@ -814,7 +884,7 @@ function updateHomeFeatCards(){
   // today strip
   const stripTasks=document.getElementById('strip-tasks');
   const stripItems=document.getElementById('strip-items');
-  if(stripTasks)stripTasks.textContent=todayTasks.filter(t=>!t.done).length;
+  if(stripTasks)stripTasks.textContent=todayTasks.filter(tk=>!taskIsDoneOn(tk,todayStr)).length;
   if(stripItems)stripItems.textContent=left;
   // what's next
   const now2=new Date();const nowTime=pad(now2.getHours())+':'+pad(now2.getMinutes());
@@ -917,6 +987,19 @@ function addItem(){
 function toggleItem(i){data.items[i].done=!data.items[i].done;renderShop();push();}
 function delItem(i){data.items.splice(i,1);renderShop();push();}
 
+// RECURRING HELPER
+function taskOccursOn(task,dateStr){
+  if(!task.repeat)return task.date===dateStr;
+  if(dateStr<task.date)return false;
+  if(task.repeat==='weekly')return new Date(dateStr+'T00:00:00').getDay()===new Date(task.date+'T00:00:00').getDay();
+  if(task.repeat==='monthly')return dateStr.slice(8)===task.date.slice(8);
+  return false;
+}
+function taskIsDoneOn(task,dateStr){
+  if(!task.repeat)return !!task.done;
+  return (task.completedDates||[]).includes(dateStr);
+}
+
 // CALENDAR
 function renderCal(){
   if(!notifInitDone){notifInitDone=true;registerSW();requestNotifPermission();}
@@ -926,7 +1009,10 @@ function renderCal(){
   const dim=new Date(calYear,calMonth+1,0).getDate();
   const dip=new Date(calYear,calMonth,0).getDate();
   const tasks=data.tasks||[],dm={};
-  tasks.forEach(t=>{if(!dm[t.date])dm[t.date]=[];dm[t.date].push(t);});
+  // Non-recurring: direct lookup
+  tasks.forEach(tk=>{if(!tk.repeat){if(!dm[tk.date])dm[tk.date]=[];dm[tk.date].push(tk);}});
+  // Recurring: spread across matching days in this month
+  tasks.forEach(tk=>{if(!tk.repeat)return;for(let d=1;d<=dim;d++){const ds=calYear+'-'+pad(calMonth+1)+'-'+pad(d);if(taskOccursOn(tk,ds)){if(!dm[ds])dm[ds]=[];dm[ds].push(tk);}}});
   let h='';
   for(let i=startDow-1;i>=0;i--)h+=`<div class="cal-day other"><div class="cal-day-num">${dip-i}</div></div>`;
   for(let d=1;d<=dim;d++){
@@ -934,7 +1020,7 @@ function renderCal(){
     const dt=dm[ds]||[],has=dt.length>0;
     const isT=ds===todayStr,isSel=ds===selectedDate;
     const cls=[isT&&!isSel?'today':'',isSel?'sel':'',has?'has-ev':''].filter(Boolean).join(' ');
-    const prev=dt.slice(0,2).map(t=>`<div class="cal-prev-item">${esc(t.name)}</div>`).join('');
+    const prev=dt.slice(0,2).map(tk=>`<div class="cal-prev-item">${tk.repeat?'🔁 ':''}${esc(tk.name)}</div>`).join('');
     const more=dt.length>2?`<div class="cal-prev-more">+${dt.length-2}</div>`:'';
     h+=`<div class="cal-day ${cls}" onclick="selectDay('${ds}')">
       <div class="cal-day-num">${d}</div>
@@ -959,33 +1045,49 @@ function showPreview(){document.getElementById('modal-preview').style.display='b
 function showAddMode(){document.getElementById('modal-preview').style.display='none';document.getElementById('modal-add').style.display='block';setTimeout(()=>document.getElementById('modal-input').focus(),200);}
 function renderModalTasks(){
   if(!selectedDate)return;
-  const tasks=(data.tasks||[]).filter(t=>t.date===selectedDate).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  const tasks=(data.tasks||[]).filter(tk=>taskOccursOn(tk,selectedDate)).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
   const el=document.getElementById('modal-tasks');
   if(!tasks.length){el.innerHTML=`<div style="text-align:center;padding:1rem;color:var(--text2);font-size:13px;">No tasks for this day yet</div>`;return;}
-  el.innerHTML=tasks.map(t=>{
-    const idx=data.tasks.indexOf(t);
-    return`<div class="m-task ${t.done?'done-t':''}">
-      <div class="t-chk ${t.done?'chkd':''}" onclick="toggleTask(${idx})"></div>
+  el.innerHTML=tasks.map(tk=>{
+    const idx=data.tasks.indexOf(tk);
+    const done=taskIsDoneOn(tk,selectedDate);
+    return`<div class="m-task ${done?'done-t':''}">
+      <div class="t-chk ${done?'chkd':''}" onclick="toggleTask(${idx},'${selectedDate}')"></div>
       <div class="t-body">
-        <div class="m-task-name">${esc(t.name)}</div>
+        <div class="m-task-name">${esc(tk.name)}</div>
         <div class="si-meta" style="margin-top:3px;">
-          ${t.time?`<span class="m-task-time">⏰ ${fmt12(t.time)}</span>`:''}
-          ${t.time&&t.reminder!=null?`<span style="font-size:10px;font-weight:700;background:var(--amber-bg);color:var(--amber);padding:2px 7px;border-radius:6px;white-space:nowrap;">🔔 ${t.reminder===0?'at time':t.reminder===1440?'1 day before':t.reminder+'min before'}</span>`:''}
+          ${tk.time?`<span class="m-task-time">⏰ ${fmt12(tk.time)}</span>`:''}
+          ${tk.repeat?`<span style="font-size:10px;font-weight:700;background:var(--blue-bg);color:var(--blue);padding:2px 7px;border-radius:6px;white-space:nowrap;">🔁 ${tk.repeat}</span>`:''}
+          ${tk.time&&tk.reminder!=null?`<span style="font-size:10px;font-weight:700;background:var(--amber-bg);color:var(--amber);padding:2px 7px;border-radius:6px;white-space:nowrap;">🔔 ${tk.reminder===0?'at time':tk.reminder===1440?'1 day before':tk.reminder+'min before'}</span>`:''}
         </div>
       </div>
       <button class="t-edit" onclick="startEditTask(${idx})">✏️</button>
-      <button class="t-del" onclick="delTask(${idx})">×</button>
+      <button class="t-del" onclick="delTask(${idx},'${selectedDate}')">×</button>
     </div>`;
   }).join('');
 }
-function toggleTask(i){data.tasks[i].done=!data.tasks[i].done;renderModalTasks();renderCal();push();}
-function delTask(i){const t=data.tasks[i];if(t)cancelNotification(t.id);data.tasks.splice(i,1);renderModalTasks();renderCal();push();}
+function toggleTask(i,dateStr){
+  const tk=data.tasks[i];
+  if(tk.repeat){
+    if(!tk.completedDates)tk.completedDates=[];
+    const pos=tk.completedDates.indexOf(dateStr);
+    if(pos>=0)tk.completedDates.splice(pos,1);else tk.completedDates.push(dateStr);
+  }else{tk.done=!tk.done;}
+  renderModalTasks();renderCal();push();
+}
+function delTask(i,dateStr){
+  const tk=data.tasks[i];
+  if(tk&&tk.repeat&&!confirm('Delete all occurrences of this recurring task?'))return;
+  if(tk)cancelNotification(tk.id);
+  data.tasks.splice(i,1);renderModalTasks();renderCal();push();
+}
 function startEditTask(i){
   editingIdx=i;const t=data.tasks[i];
   document.getElementById('edit-name-input').value=t.name;
   document.getElementById('edit-time-input').value=t.time||'';
   const rr=document.getElementById('edit-reminder-row'),rs=document.getElementById('edit-reminder');
   if(t.time){rr.style.display='block';rs.value=t.reminder!=null?String(t.reminder):'';}else{rr.style.display='none';}
+  const rp=document.getElementById('edit-repeat');if(rp)rp.value=t.repeat||'';
   document.getElementById('edit-panel').style.display='block';document.getElementById('edit-name-input').focus();
 }
 function cancelEdit(){editingIdx=-1;document.getElementById('edit-panel').style.display='none';}
@@ -995,6 +1097,7 @@ function saveEdit(){
   cancelNotification(t.id);
   t.name=name;t.time=document.getElementById('edit-time-input').value||'';
   if(t.time){const rv=document.getElementById('edit-reminder').value;t.reminder=rv!==''?parseInt(rv):null;}else{t.reminder=null;}
+  const rp=document.getElementById('edit-repeat');if(rp){t.repeat=rp.value||'';if(!t.repeat)t.completedDates=undefined;}
   if(!t.id)t.id=genId();
   editingIdx=-1;document.getElementById('edit-panel').style.display='none';
   renderModalTasks();renderCal();push();
@@ -1006,9 +1109,11 @@ function addDayTask(){
   const time=timeOn?getDrumTime():'';
   const rv=timeOn?document.getElementById('modal-reminder').value:'';
   const reminder=timeOn&&rv!==''?parseInt(rv):null;
-  const task={name,date:selectedDate,time,done:false,id:genId(),reminder};
+  const repeatEl=document.getElementById('modal-repeat');const repeat=repeatEl?repeatEl.value||'':'';
+  const task={name,date:selectedDate,time,done:false,id:genId(),reminder,repeat,completedDates:[]};
   data.tasks.push(task);
   input.value='';
+  if(repeatEl)repeatEl.value='';
   document.getElementById('drum-picker-wrap').style.display='none';
   document.getElementById('modal-reminder-row').style.display='none';
   document.getElementById('time-toggle-track').classList.remove('on');
@@ -1322,6 +1427,56 @@ function openSummaryModal(type){
     el.innerHTML=html;
   }
   document.getElementById('cat-overlay').classList.add('open');
+}
+
+// QUICK CAPTURE
+let qcTxType='expense';
+function openQC(){
+  document.getElementById('qc-overlay').classList.add('open');
+  document.getElementById('qc-cal-date').value=fmtDate(new Date());
+  setTimeout(()=>{const p=document.querySelector('.qc-panel.qc-active');if(p){const i=p.querySelector('input[type=text]');if(i)i.focus();}},300);
+}
+function closeQC(){document.getElementById('qc-overlay').classList.remove('open');}
+function qcOverlayClick(e){if(e.target===document.getElementById('qc-overlay'))closeQC();}
+function switchQCTab(tab){
+  document.querySelectorAll('.qc-tab').forEach(el=>el.classList.remove('qc-active'));
+  document.querySelectorAll('.qc-panel').forEach(el=>el.classList.remove('qc-active'));
+  document.getElementById('qct-'+tab).classList.add('qc-active');
+  document.getElementById('qcp-'+tab).classList.add('qc-active');
+  setTimeout(()=>{const i=document.querySelector('#qcp-'+tab+' input[type=text]');if(i)i.focus();},100);
+}
+function setQCTxType(type){
+  qcTxType=type;
+  document.getElementById('qc-type-income').className='tx-type-btn'+(type==='income'?' sel-income':'');
+  document.getElementById('qc-type-expense').className='tx-type-btn'+(type==='expense'?' sel-expense':'');
+}
+function qcAddShop(){
+  const inp=document.getElementById('qc-shop-input');const name=inp.value.trim();if(!name)return;
+  data.items.push({name,qty:1,store:selStore,done:false});
+  inp.value='';renderShop();push();closeQC();
+}
+function qcAddTodo(){
+  const inp=document.getElementById('qc-todo-input');const name=inp.value.trim();if(!name)return;
+  data.todos.push({name,done:false});
+  inp.value='';renderTodos();updateHomeFeatCards();push();closeQC();
+}
+function qcAddCal(){
+  const name=document.getElementById('qc-cal-input').value.trim();
+  const date=document.getElementById('qc-cal-date').value;
+  if(!name||!date)return;
+  const task={name,date,time:'',done:false,id:genId(),reminder:null,repeat:'',completedDates:[]};
+  data.tasks.push(task);
+  document.getElementById('qc-cal-input').value='';
+  renderCal();updateHomeFeatCards();push();closeQC();
+}
+function qcAddBudget(){
+  const name=document.getElementById('qc-budget-name').value.trim();
+  const amount=parseFloat(document.getElementById('qc-budget-amount').value)||0;
+  if(!name||!amount)return;
+  data.transactions.push({name,amount,cat:'other',date:fmtDate(new Date()),type:qcTxType});
+  document.getElementById('qc-budget-name').value='';
+  document.getElementById('qc-budget-amount').value='';
+  renderBudget();push();closeQC();
 }
 
 // DRUM
